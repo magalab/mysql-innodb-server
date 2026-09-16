@@ -16,7 +16,10 @@ for relative_dir in \
   storage/ndb \
   storage/example \
   storage/secondary_engine_mock \
-  sql/dd/ndbinfo_schema; do
+  sql/dd/ndbinfo_schema \
+  storage/csv \
+  storage/myisam \
+  storage/myisammrg; do
   if [[ -e "$source_dir/$relative_dir" ]]; then
     echo "unexpected source directory: $relative_dir" >&2
     exit 1

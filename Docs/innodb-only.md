@@ -6,20 +6,20 @@
 
 ## Milestones
 
-### M1: small patch repository and optional cleanup
+### M1: small patch repository and optional cleanup（已完成）
 
 - Git 不保存 MySQL 完整源码；
 - 移除 NDB、Archive、Blackhole、Federated、Example 和 mock engine 源码；
 - 保留 InnoDB、MyISAM、CSV、HEAP、TempTable、Performance Schema；
 - 完成干净 CMake 配置和构建。
 
-### M2: user-facing engine cleanup
+### M2: user-facing engine cleanup（补丁已完成，完整构建验证中）
 
 - 删除 CSV、MyISAM、MRG_MYISAM；
 - 修改启动阶段的默认 handlerton 初始化；
 - 移除 `mi_log`、MyISAM key cache 和 MyISAM 专属系统变量；
 - 将仍被 SQL 层使用的字节序和检查标志移到通用头文件；
-- 更新工具、man page 和安装清单。
+- 工具、man page 和安装清单仍待下一轮清理；当前先保证 Server 核心能够脱离这三个引擎源码构建。
 
 ### M3: strict engine cleanup
 

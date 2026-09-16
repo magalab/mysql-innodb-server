@@ -4,13 +4,13 @@
 
 ## 当前状态
 
-当前只包含第一阶段补丁：移除 NDB information schema 在 Server 核心中的无条件集成。它不会删除 MySQL 源码目录中的其他引擎，也不会让最终 Server 变成 InnoDB-only。
+当前已包含 M1 和 M2 补丁：移除 NDB information schema 在 Server 核心中的无条件集成，并清理 CSV、MyISAM、MRG_MYISAM 的 Server 核心依赖。它还不会让最终 Server 变成严格意义上的 InnoDB-only：HEAP、TempTable 和 Performance Schema 仍是内部路径的一部分。
 
 后续补丁按以下顺序增加：
 
 1. 删除可选引擎和组件：NDB、Archive、Blackhole、Federated 等；
 2. 删除 CSV；
-3. 删除 MyISAM 和 MRG_MYISAM，并把启动默认引擎改为 InnoDB；
+3. 删除 MyISAM 和 MRG_MYISAM，并把启动默认引擎改为 InnoDB；（已完成）
 4. 视最终兼容性要求，重构并删除 HEAP、TempTable、Performance Schema；
 5. 清理工具、安装包和测试。
 
@@ -29,7 +29,7 @@ CONFIRM_PRUNE=yes "$PATCH_REPO/scripts/prune-source.sh" optional "$SOURCE_DIR"
 "$PATCH_REPO/scripts/verify.sh" "$SOURCE_DIR" "$BUILD_DIR"
 ```
 
-`prune-source.sh` 只删除脚本中列出的明确目录。`user` 和 `strict` 阶段在对应补丁完成前禁止执行。
+`prune-source.sh` 只删除脚本中列出的明确目录。当前 M2 回放后可以执行 `optional` 和 `user`；`strict` 阶段在对应补丁完成前禁止执行。
 
 ## 源码版本
 
