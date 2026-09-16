@@ -15,7 +15,7 @@
 - `SHOW ENGINES` 仍会显示 `PERFORMANCE_SCHEMA`、`InnoDB` 和 `MEMORY`，这是当前“正常可运行 Server”目标的预期结果；
 - Docker 镜像包含启动所需的动态组件、ICU 数据、时区数据、TLS、初始化脚本和健康检查。
 
-因此，当前版本是“用户表 InnoDB-only”基线，不是 `SHOW ENGINES` 严格只剩 InnoDB 的版本。后者属于后续 M3 目标，可能影响临时表、监控和兼容性。
+本项目目标已完成：在保留 MySQL 正常运行所需的 `MEMORY`、`TempTable` 和 `PERFORMANCE_SCHEMA` 能力的前提下，用户表的持久化存储引擎仅为 InnoDB。它们是服务运行路径中的内部依赖，不属于用户表的持久化引擎。
 
 ## 快速开始
 
@@ -130,7 +130,7 @@ CONFIRM_PRUNE=yes "$PATCH_REPO/scripts/prune-source.sh" user "$SOURCE_DIR"
 "$PATCH_REPO/scripts/verify.sh" "$SOURCE_DIR" "$BUILD_DIR"
 ```
 
-`strict` 裁剪阶段会删除 HEAP、TempTable 和 Performance Schema，当前版本禁止在未完成 M3 重构前执行。
+Docker 和可运行的源码构建使用 `optional`、`user` 两个裁剪级别。脚本仍保留 `strict` 级别用于实验性裁剪；它会删除 HEAP、TempTable 和 Performance Schema，不属于当前可运行 Server 构建路径。
 
 ## Docker 设计
 

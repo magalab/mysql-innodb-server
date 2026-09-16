@@ -15,7 +15,7 @@ The current implementation completes the user-facing storage-engine cleanup:
 - `SHOW ENGINES` is expected to show `PERFORMANCE_SCHEMA`, `InnoDB`, and `MEMORY`;
 - the Docker image includes the startup component, ICU data, timezone data, TLS support, initialization scripts, and a healthcheck.
 
-This is therefore the “InnoDB-only user tables” baseline, not a strict build where `SHOW ENGINES` contains only InnoDB. That stricter M3 target would require further changes to temporary tables, monitoring, and compatibility behavior.
+The project target is complete: while retaining the `MEMORY`, `TempTable`, and `PERFORMANCE_SCHEMA` capabilities required for normal MySQL operation, InnoDB is the only persistent storage engine available for user tables. These components support server runtime paths; they are not persistent engines for user tables.
 
 ## Quick start
 
@@ -130,7 +130,7 @@ CONFIRM_PRUNE=yes "$PATCH_REPO/scripts/prune-source.sh" user "$SOURCE_DIR"
 "$PATCH_REPO/scripts/verify.sh" "$SOURCE_DIR" "$BUILD_DIR"
 ```
 
-The `strict` pruning phase removes HEAP, TempTable, and Performance Schema. Do not run it until the M3 refactoring is complete.
+Docker and runnable source builds use the `optional` and `user` pruning levels. The script still retains a `strict` level for experimental pruning; it removes HEAP, TempTable, and Performance Schema and is not part of the runnable Server build path.
 
 ## Docker design
 

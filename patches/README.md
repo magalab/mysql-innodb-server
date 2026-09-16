@@ -14,4 +14,4 @@
 5. `0005-guard-innodb-pfs-during-help.patch`
 6. `0006-use-innodb-for-system-log-tables.patch`
 
-目录删除不放进 diff 补丁，以免把被删除源码内容重复存储在 Git 中；目录删除由 `scripts/prune-source.sh` 按阶段执行。
+目录删除不放进 diff 补丁，以免把被删除源码内容重复存储在 Git 中；目录删除由 `scripts/prune-source.sh` 按裁剪级别执行。
