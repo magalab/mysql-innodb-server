@@ -27,7 +27,7 @@ The build context only needs this repository. The Docker builder downloads the o
 cd /path/to/mysql-innodb-server
 docker build --progress=plain \
   --build-arg CMAKE_BUILD_PARALLEL_LEVEL=4 \
-  -t mysql-innodb-server:8.4.11 .
+  -t ghcr.io/magalab/mysql-innodb-server:8.4.11 .
 ```
 
 ### Start the server
@@ -37,7 +37,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_ROOT_PASSWORD='change-me' \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.11
 ```
 
 The default root account is `root@'%'`, so GUI clients and other containers can connect over TCP:
@@ -56,7 +56,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_ALLOW_EMPTY_PASSWORD=yes \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.11
 ```
 
 When this is combined with the default remote root account, the user is responsible for the resulting network exposure.
@@ -98,7 +98,7 @@ docker run -d --name mysql-innodb-server \
   -e MYSQL_ROOT_PASSWORD='change-me' \
   -v mysql-innodb-server-data:/var/lib/mysql \
   -v "$(pwd)/initdb:/docker-entrypoint-initdb.d:ro" \
-  mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.11
 ```
 
 ## Patch series

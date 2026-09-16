@@ -27,7 +27,7 @@
 cd /path/to/mysql-innodb-server
 docker build --progress=plain \
   --build-arg CMAKE_BUILD_PARALLEL_LEVEL=4 \
-  -t mysql-innodb-server:8.4.11 .
+  -t ghcr.io/magalab/mysql-innodb-server:8.4.11 .
 ```
 
 ### 启动服务
@@ -37,7 +37,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_ROOT_PASSWORD='change-me' \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.11
 ```
 
 默认会创建 `root@'%'`，因此 GUI 和其他容器可以通过 TCP 连接。初始化完成后可使用：
@@ -56,7 +56,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_ALLOW_EMPTY_PASSWORD=yes \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.11
 ```
 
 `MYSQL_ALLOW_EMPTY_PASSWORD=yes` 与默认远程 root 账户组合时，使用者需要自行承担网络暴露风险。
@@ -98,7 +98,7 @@ docker run -d --name mysql-innodb-server \
   -e MYSQL_ROOT_PASSWORD='change-me' \
   -v mysql-innodb-server-data:/var/lib/mysql \
   -v "$(pwd)/initdb:/docker-entrypoint-initdb.d:ro" \
-  mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.11
 ```
 
 ## 补丁序列
