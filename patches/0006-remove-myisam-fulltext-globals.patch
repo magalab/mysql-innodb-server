@@ -1,0 +1,77 @@
+diff --git a/include/ft_global.h b/include/ft_global.h
+--- a/include/ft_global.h
++++ b/include/ft_global.h
+@@ -83,2 +83,0 @@
+-extern const char *ft_stopword_file;
+-extern const char *ft_precompiled_stopwords[];
+@@ -86,5 +86,0 @@
+-extern ulong ft_min_word_len;
+-extern ulong ft_max_word_len;
+-extern ulong ft_query_expansion_limit;
+-extern const char *ft_boolean_syntax;
+-extern struct st_mysql_ftparser ft_default_parser;
+@@ -92,2 +92,0 @@
+-int ft_init_stopwords(void);
+-void ft_free_stopwords(void);
+@@ -130,1 +130,0 @@
+-bool ft_boolean_check_syntax_string(const uchar *);
+diff --git a/sql/mysqld.cc b/sql/mysqld.cc
+--- a/sql/mysqld.cc
++++ b/sql/mysqld.cc
+@@ -8556,1 +8556,0 @@
+-  ft_init_stopwords();
+@@ -12902,5 +12902,0 @@
+-  if (ft_boolean_check_syntax_string(
+-          pointer_cast<const uchar *>(ft_boolean_syntax))) {
+-    LogErr(ERROR_LEVEL, ER_FT_BOOL_SYNTAX_INVALID, ft_boolean_syntax);
+-    return 1;
+-  }
+diff --git a/sql/set_var.cc b/sql/set_var.cc
+--- a/sql/set_var.cc
++++ b/sql/set_var.cc
+@@ -1460,1 +1460,0 @@
+-          "ft_stopword_file",
+diff --git a/sql/sys_vars.cc b/sql/sys_vars.cc
+--- a/sql/sys_vars.cc
++++ b/sql/sys_vars.cc
+@@ -2144,13 +2144,0 @@
+-static bool check_ftb_syntax(sys_var *, THD *, set_var *var) {
+-  return ft_boolean_check_syntax_string(
+-      (uchar *)(var->save_result.string_value.str));
+-}
+-/// @todo make SESSION_VAR (usability enhancement and a fix for a race
+-/// condition)
+-static Sys_var_charptr Sys_ft_boolean_syntax(
+-    "ft_boolean_syntax",
+-    "List of operators for "
+-    "MATCH ... AGAINST ( ... IN BOOLEAN MODE)",
+-    GLOBAL_VAR(ft_boolean_syntax), CMD_LINE(REQUIRED_ARG), IN_SYSTEM_CHARSET,
+-    DEFAULT(DEFAULT_FTB_SYNTAX), NO_MUTEX_GUARD, NOT_IN_BINLOG,
+-    ON_CHECK(check_ftb_syntax));
+@@ -2158,7 +2158,0 @@
+-static Sys_var_ulong Sys_ft_max_word_len(
+-    "ft_max_word_len",
+-    "The maximum length of the word to be included in a FULLTEXT index. "
+-    "Note: FULLTEXT indexes must be rebuilt after changing this variable",
+-    READ_ONLY GLOBAL_VAR(ft_max_word_len), CMD_LINE(REQUIRED_ARG),
+-    VALID_RANGE(10, HA_FT_MAXCHARLEN), DEFAULT(HA_FT_MAXCHARLEN),
+-    BLOCK_SIZE(1));
+@@ -2166,6 +2166,0 @@
+-static Sys_var_ulong Sys_ft_min_word_len(
+-    "ft_min_word_len",
+-    "The minimum length of the word to be included in a FULLTEXT index. "
+-    "Note: FULLTEXT indexes must be rebuilt after changing this variable",
+-    READ_ONLY GLOBAL_VAR(ft_min_word_len), CMD_LINE(REQUIRED_ARG),
+-    VALID_RANGE(1, HA_FT_MAXCHARLEN), DEFAULT(4), BLOCK_SIZE(1));
+@@ -2173,6 +2173,0 @@
+-/// @todo make it an updatable SESSION_VAR
+-static Sys_var_ulong Sys_ft_query_expansion_limit(
+-    "ft_query_expansion_limit",
+-    "Number of best matches to use for query expansion",
+-    READ_ONLY GLOBAL_VAR(ft_query_expansion_limit), CMD_LINE(REQUIRED_ARG),
+-    VALID_RANGE(0, 1000), DEFAULT(20), BLOCK_SIZE(1));
+@@ -2180,4 +2180,0 @@
+-static Sys_var_charptr Sys_ft_stopword_file(
+-    "ft_stopword_file", "Use stopwords from this file instead of built-in list",
+-    READ_ONLY NON_PERSIST GLOBAL_VAR(ft_stopword_file), CMD_LINE(REQUIRED_ARG),
+-    IN_FS_CHARSET, DEFAULT(nullptr));

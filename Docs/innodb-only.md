@@ -13,13 +13,16 @@
 - 保留 InnoDB、MyISAM、CSV、HEAP、TempTable、Performance Schema；
 - 完成干净 CMake 配置和构建。
 
-### M2: user-facing engine cleanup（补丁已完成，完整构建验证中）
+### M2: user-facing engine cleanup（已完成并验证 `mysqld` 目标）
 
 - 删除 CSV、MyISAM、MRG_MYISAM；
 - 修改启动阶段的默认 handlerton 初始化；
 - 移除 `mi_log`、MyISAM key cache 和 MyISAM 专属系统变量；
 - 将仍被 SQL 层使用的字节序和检查标志移到通用头文件；
+- 移除 MyISAM 专属全文检索全局变量和启动校验；InnoDB FTS 保留其自身配置路径；
 - 工具、man page 和安装清单仍待下一轮清理；当前先保证 Server 核心能够脱离这三个引擎源码构建。
+
+验证结果：应用 `0001`—`0006`、执行 `optional` 和 `user` 裁剪后，CMake 配置成功，`mysqld` 目标成功链接；生成的 builtin plugin list 不包含 MyISAM、CSV、MRG_MYISAM 或 NDB。
 
 ### M3: strict engine cleanup
 

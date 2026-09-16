@@ -24,10 +24,10 @@ fi
 
 for patch_file in "${patches[@]}"; do
   echo "checking $(basename "$patch_file")"
-  (cd "$source_dir" && git apply --no-index --check "$patch_file")
+  (cd "$source_dir" && git apply --no-index --unidiff-zero --check "$patch_file")
 done
 
 for patch_file in "${patches[@]}"; do
   echo "applying $(basename "$patch_file")"
-  (cd "$source_dir" && git apply --no-index "$patch_file")
+  (cd "$source_dir" && git apply --no-index --unidiff-zero "$patch_file")
 done

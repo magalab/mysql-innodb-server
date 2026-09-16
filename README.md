@@ -4,7 +4,7 @@
 
 ## 当前状态
 
-当前已包含 M1 和 M2 补丁：移除 NDB information schema 在 Server 核心中的无条件集成，并清理 CSV、MyISAM、MRG_MYISAM 的 Server 核心依赖。它还不会让最终 Server 变成严格意义上的 InnoDB-only：HEAP、TempTable 和 Performance Schema 仍是内部路径的一部分。
+当前已包含 M1 和 M2 补丁：移除 NDB information schema 在 Server 核心中的无条件集成，并清理 CSV、MyISAM、MRG_MYISAM 的 Server 核心依赖。M2 已在 Apple Silicon 环境成功构建 `mysqld` 目标，并通过内置插件清单检查。它还不会让最终 Server 变成严格意义上的 InnoDB-only：HEAP、TempTable 和 Performance Schema 仍是内部路径的一部分。
 
 后续补丁按以下顺序增加：
 
@@ -25,6 +25,7 @@ BUILD_DIR=/private/tmp/mysql-8.4.11-innodb-build
 
 "$PATCH_REPO/scripts/apply-patches.sh" "$SOURCE_DIR"
 CONFIRM_PRUNE=yes "$PATCH_REPO/scripts/prune-source.sh" optional "$SOURCE_DIR"
+CONFIRM_PRUNE=yes "$PATCH_REPO/scripts/prune-source.sh" user "$SOURCE_DIR"
 "$PATCH_REPO/scripts/build.sh" "$SOURCE_DIR" "$BUILD_DIR"
 "$PATCH_REPO/scripts/verify.sh" "$SOURCE_DIR" "$BUILD_DIR"
 ```
