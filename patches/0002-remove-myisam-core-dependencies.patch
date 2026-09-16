@@ -1,0 +1,435 @@
+diff --git a/sql/handler.cc b/sql/handler.cc
+index 7513588..c2bd6c1 100644
+--- a/sql/handler.cc
++++ b/sql/handler.cc
+@@ -866,9 +866,6 @@ int ha_initialize_handlerton(st_plugin_int *plugin) {
+     case DB_TYPE_TEMPTABLE:
+       temptable_hton = hton;
+       break;
+-    case DB_TYPE_MYISAM:
+-      myisam_hton = hton;
+-      break;
+     case DB_TYPE_INNODB:
+       innodb_hton = hton;
+       break;
+@@ -5695,7 +5692,8 @@ int ha_resize_key_cache(KEY_CACHE *key_cache) {
+   Move all tables from one key cache to another one.
+ */
+ int ha_change_key_cache(KEY_CACHE *old_key_cache, KEY_CACHE *new_key_cache) {
+-  mi_change_key_cache(old_key_cache, new_key_cache);
++  (void)old_key_cache;
++  (void)new_key_cache;
+   return 0;
+ }
+ 
+diff --git a/sql/mysqld.cc b/sql/mysqld.cc
+index 0769751..feba758 100644
+--- a/sql/mysqld.cc
++++ b/sql/mysqld.cc
+@@ -716,7 +716,6 @@ MySQL clients support the protocol:
+ #include "my_thread_local.h"
+ #include "my_time.h"
+ #include "my_timer.h"  // my_timer_initialize
+-#include "myisam.h"
+ #include "mysql/binlog/event/binlog_event.h"
+ #include "mysql/binlog/event/control_events.h"
+ #include "mysql/components/services/bits/psi_bits.h"
+@@ -893,7 +892,6 @@ MySQL clients support the protocol:
+ #include "sql/xa/transaction_cache.h"  // xa::Transaction_cache
+ #include "sql_common.h"                // mysql_client_plugin_init
+ #include "sql_string.h"
+-#include "storage/myisam/ha_myisam.h"                 // HA_RECOVER_OFF
+ #include "storage/perfschema/pfs_buffer_container.h"  // PFS metric counters
+ #include "storage/perfschema/pfs_instr_class.h"       // PFS metric counters
+ #include "storage/perfschema/pfs_services.h"
+@@ -1261,7 +1259,6 @@ bool opt_replica_allow_batching = true;
+ */
+ handlerton *heap_hton;
+ handlerton *temptable_hton;
+-handlerton *myisam_hton;
+ handlerton *innodb_hton;
+ 
+ char *opt_disabled_storage_engines;
+@@ -1279,7 +1276,6 @@ bool opt_log_slow_replica_statements = false;
+ bool lower_case_file_system = false;
+ bool opt_large_pages = false;
+ bool opt_super_large_pages = false;
+-bool opt_myisam_use_mmap = false;
+ std::atomic<bool> offline_mode;
+ uint opt_large_page_size = 0;
+ uint default_password_lifetime = 0;
+@@ -1338,7 +1334,6 @@ const char *timestamp_type_names[] = {"UTC", "SYSTEM", NullS};
+ ulong opt_log_timestamps;
+ uint mysqld_port, test_flags, select_errors, ha_open_options;
+ uint mysqld_port_timeout;
+-ulong delay_key_write_options;
+ uint protocol_version;
+ uint lower_case_table_names;
+ long tc_heuristic_recover;
+@@ -1677,7 +1672,6 @@ char *opt_general_logname, *opt_slow_logname, *opt_bin_logname;
+ bool binlog_expire_logs_seconds_supplied = false;
+ /* Static variables */
+ 
+-static bool opt_myisam_log;
+ static ulong opt_specialflag;
+ char *opt_binlog_index_name;
+ char *mysql_home_ptr, *pidfile_name_ptr;
+@@ -6298,50 +6292,6 @@ static PSI_metric_info_v1 handler_metrics[] = {
+      get_metric_aggregated_integer,
+      (void *)offsetof(aggregated_stats_buffer, ha_write_count)}};
+ 
+-static PSI_metric_info_v1 myisam_metrics[] = {
+-    {"key_blocks_not_flushed", "",
+-     "The number of key blocks in the MyISAM key cache that have changed but "
+-     "have not yet been flushed to disk (Key_blocks_not_flushed)",
+-     MetricOTELType::ASYNC_GAUGE_COUNTER, MetricNumType::METRIC_INTEGER, 0, 0,
+-     get_metric_simple_integer<decltype(dflt_key_cache->global_blocks_changed)>,
+-     &dflt_key_cache->global_blocks_changed},
+-    {"key_blocks_unused", "",
+-     "The number of unused blocks in the MyISAM key cache (Key_blocks_unused)",
+-     MetricOTELType::ASYNC_GAUGE_COUNTER, MetricNumType::METRIC_INTEGER, 0, 0,
+-     get_metric_simple_integer<decltype(dflt_key_cache->blocks_unused)>,
+-     &dflt_key_cache->blocks_unused},
+-    {"key_blocks_used", "",
+-     "The number of used blocks in the MyISAM key cache (Key_blocks_used)",
+-     MetricOTELType::ASYNC_GAUGE_COUNTER, MetricNumType::METRIC_INTEGER, 0, 0,
+-     get_metric_simple_integer<decltype(dflt_key_cache->blocks_used)>,
+-     &dflt_key_cache->blocks_used},
+-    {"key_read_requests", "",
+-     "The number of requests to read a key block from the MyISAM key cache "
+-     "(Key_read_requests)",
+-     MetricOTELType::ASYNC_GAUGE_COUNTER, MetricNumType::METRIC_INTEGER, 0, 0,
+-     get_metric_simple_integer<
+-         decltype(dflt_key_cache->global_cache_r_requests)>,
+-     &dflt_key_cache->global_cache_r_requests},
+-    {"key_reads", "",
+-     "The number of physical reads of a key block from disk into the MyISAM "
+-     "key cache (Key_reads)",
+-     MetricOTELType::ASYNC_COUNTER, MetricNumType::METRIC_INTEGER, 0, 0,
+-     get_metric_simple_integer<decltype(dflt_key_cache->global_cache_read)>,
+-     &dflt_key_cache->global_cache_read},
+-    {"key_write_requests", "",
+-     "The number of requests to write a key block to the MyISAM key cache "
+-     "(Key_write_requests)",
+-     MetricOTELType::ASYNC_COUNTER, MetricNumType::METRIC_INTEGER, 0, 0,
+-     get_metric_simple_integer<
+-         decltype(dflt_key_cache->global_cache_w_requests)>,
+-     &dflt_key_cache->global_cache_w_requests},
+-    {"key_writes", "",
+-     "The number of physical writes of a key block from the MyISAM key cache "
+-     "to disk (Key_writes)",
+-     MetricOTELType::ASYNC_COUNTER, MetricNumType::METRIC_INTEGER, 0, 0,
+-     get_metric_simple_integer<decltype(dflt_key_cache->global_cache_write)>,
+-     &dflt_key_cache->global_cache_write}};
+-
+ static PSI_metric_info_v1 ssl_metrics[] = {
+     {"client_connects", "",
+      "The number of SSL connection attempts to an SSL-enabled replication "
+@@ -6411,9 +6361,7 @@ static PSI_meter_info_v1 core_meters[] = {
+     {"mysql.stats.handler", "MySql handler stats", 10, 0, 0, handler_metrics,
+      std::size(handler_metrics)},
+     {"mysql.stats.ssl", "MySql TLS related stats", 10, 0, 0, ssl_metrics,
+-     std::size(ssl_metrics)},
+-    {"mysql.myisam", "MySql MyISAM storage engine stats", 10, 0, 0,
+-     myisam_metrics, std::size(myisam_metrics)}};
++     std::size(ssl_metrics)}};
+ #endif /* HAVE_PSI_METRICS_INTERFACE */
+ 
+ void register_server_metric_sources() {
+@@ -8578,8 +8526,6 @@ static int init_server_components() {
+       LogErr(WARNING_LEVEL, ER_NEED_LOG_BIN, "--binlog-expire-logs-seconds");
+   }
+ 
+-  if (opt_myisam_log) (void)mi_log(1);
+-
+ #if defined(HAVE_MLOCKALL) && defined(MCL_CURRENT)
+   if (locked_in_memory && !getuid()) {
+     if (setreuid((uid_t)-1, 0) == -1) {  // this should never happen
+@@ -10654,7 +10600,7 @@ struct my_option my_long_options[] = {
+      nullptr},
+     {"core-file", OPT_WANT_CORE, "Write core on errors.", nullptr, nullptr,
+      nullptr, GET_NO_ARG, NO_ARG, 0, 0, 0, nullptr, 0, nullptr},
+-    /* default-storage-engine should have "MyISAM" as def_value. Instead
++    /* default-storage-engine should have "InnoDB" as def_value. Instead
+        of initializing it here it is done in init_common_variables() due
+        to a compiler bug in Sun Studio compiler. */
+     {"default-storage-engine", 0, "The default storage engine for new tables",
+@@ -10670,9 +10616,7 @@ struct my_option my_long_options[] = {
+     {"exit-info", 'T', "Used for debugging. Use at your own risk.", nullptr,
+      nullptr, nullptr, GET_LONG, OPT_ARG, 0, 0, 0, nullptr, 0, nullptr},
+     {"external-locking", 0,
+-     "Use system (external) locking (disabled by "
+-     "default).  With this option enabled you can run myisamchk to test "
+-     "(not repair) tables while the MySQL server is running. Disable with "
++     "Use system (external) locking (disabled by default). Disable with "
+      "--skip-external-locking.",
+      &opt_external_locking, &opt_external_locking, nullptr, GET_BOOL, NO_ARG, 0,
+      0, 0, nullptr, 0, nullptr},
+@@ -10708,9 +10652,6 @@ struct my_option my_long_options[] = {
+     {"relay-log-index", 0, "File that holds the names for relay log files.",
+      &opt_relaylog_index_name, &opt_relaylog_index_name, nullptr, GET_STR,
+      REQUIRED_ARG, 0, 0, 0, nullptr, 0, nullptr},
+-    {"log-isam", OPT_ISAM_LOG, "Log all MyISAM changes to file.",
+-     &myisam_log_filename, &myisam_log_filename, nullptr, GET_STR, OPT_ARG, 0,
+-     0, 0, nullptr, 0, nullptr},
+     {"log-short-format", 0,
+      "Don't log extra information to update and slow-query logs.",
+      &opt_short_log_format, &opt_short_log_format, nullptr, GET_BOOL, NO_ARG, 0,
+@@ -11850,13 +11791,11 @@ static int mysql_init_variables() {
+   /* Things reset to zero */
+   opt_skip_replica_start = false;
+   pidfile_name[0] = 0;
+-  myisam_test_invalid_symlink = test_if_data_home_dir;
+   opt_general_log = opt_slow_log = false;
+   opt_disable_networking = opt_skip_show_db = false;
+   opt_skip_name_resolve = false;
+   opt_general_logname = opt_binlog_index_name = opt_slow_logname = nullptr;
+   opt_tc_log_file = "tc.log";  // no hostname in tc_log file name !
+-  opt_myisam_log = false;
+   mqh_used = false;
+   server_shutting_down = false;
+   server_id_supplied = false;
+@@ -12501,9 +12440,6 @@ bool mysqld_get_one_option(int optid,
+       test_flags = argument ? (uint)atoi(argument) : 0;
+       opt_endinfo = true;
+       break;
+-    case (int)OPT_ISAM_LOG:
+-      opt_myisam_log = true;
+-      break;
+     case (int)OPT_BIN_LOG:
+       opt_bin_log = (argument != disabled_my_option);
+       if (!opt_bin_log) {
+@@ -12658,9 +12594,6 @@ bool mysqld_get_one_option(int optid,
+       break;
+     case (int)OPT_SKIP_NEW:
+       opt_specialflag |= SPECIAL_NO_NEW_FUNC;
+-      delay_key_write_options = DELAY_KEY_WRITE_NONE;
+-      myisam_concurrent_insert = 0;
+-      myisam_recover_options = HA_RECOVER_OFF;
+       sp_automatic_privileges = false;
+       my_enable_symlinks = false;
+       ha_open_options &= ~(HA_OPEN_ABORT_IF_CRASHED | HA_OPEN_DELAY_KEY_WRITE);
+@@ -12978,8 +12911,6 @@ static int get_options(int *argc_ptr, char ***argv_ptr) {
+ 
+   if (opt_skip_show_db) opt_specialflag |= SPECIAL_SKIP_SHOW_DB;
+ 
+-  if (myisam_flush) flush_time = 0;
+-
+   if (opt_replica_skip_errors) add_replica_skip_errors(opt_replica_skip_errors);
+ 
+   if (global_system_variables.max_join_size == HA_POS_ERROR)
+@@ -13019,9 +12950,6 @@ static int get_options(int *argc_ptr, char ***argv_ptr) {
+     test_flags |= TEST_SIGINT | TEST_NO_STACKTRACE;
+     test_flags &= ~TEST_CORE_ON_SIGNAL;
+   }
+-  /* Set global MyISAM variables from delay_key_write_options */
+-  fix_delay_key_write(nullptr, nullptr, OPT_GLOBAL);
+-
+ #ifndef _WIN32
+   if (mysqld_chroot) set_root(mysqld_chroot);
+ #endif
+@@ -13031,7 +12959,7 @@ static int get_options(int *argc_ptr, char ***argv_ptr) {
+     Set some global variables from the global_system_variables
+     In most cases the global variables will not be used
+   */
+-  my_disable_locking = myisam_single_user = (opt_external_locking == 0);
++  my_disable_locking = (opt_external_locking == 0);
+   my_default_record_cache_size = global_system_variables.read_buff_size;
+ 
+   global_system_variables.long_query_time =
+diff --git a/sql/mysqld.h b/sql/mysqld.h
+index be18458..e544b8b 100644
+--- a/sql/mysqld.h
++++ b/sql/mysqld.h
+@@ -177,7 +177,7 @@ extern long opt_upgrade_mode;
+ extern long opt_check_table_funs;
+ extern bool opt_initialize;
+ extern bool opt_safe_user_create;
+-extern bool opt_local_infile, opt_myisam_use_mmap;
++extern bool opt_local_infile;
+ extern bool opt_replica_compressed_protocol;
+ extern ulong replica_exec_mode_options;
+ extern Rpl_global_filter rpl_global_filter;
+@@ -251,13 +251,6 @@ extern std::atomic<bool> offline_mode;
+ extern uint test_flags, select_errors, ha_open_options;
+ extern uint protocol_version, mysqld_port;
+ 
+-enum enum_delay_key_write {
+-  DELAY_KEY_WRITE_NONE,
+-  DELAY_KEY_WRITE_ON,
+-  DELAY_KEY_WRITE_ALL
+-};
+-extern ulong delay_key_write_options;
+-
+ extern ulong opt_log_timestamps;
+ extern const char *timestamp_type_names[];
+ extern char *opt_general_logname, *opt_slow_logname, *opt_bin_logname,
+@@ -361,7 +354,6 @@ extern struct System_variables max_system_variables;
+ extern struct System_status_var global_status_var;
+ extern struct aggregated_stats global_aggregated_stats;
+ extern struct rand_struct sql_rand;
+-extern handlerton *myisam_hton;
+ extern handlerton *heap_hton;
+ extern handlerton *temptable_hton;
+ extern handlerton *innodb_hton;
+diff --git a/sql/sql_insert.cc b/sql/sql_insert.cc
+index ed0b14f..17268f5 100644
+--- a/sql/sql_insert.cc
++++ b/sql/sql_insert.cc
+@@ -2625,8 +2625,7 @@ static TABLE *create_table_from_items(THD *thd, HA_CREATE_INFO *create_info,
+   TABLE_SHARE share;
+   init_tmp_table_share(thd, &share, "", 0, "", "", nullptr);
+   share.db_create_options = 0;
+-  share.db_low_byte_first = (create_info->db_type == myisam_hton ||
+-                             create_info->db_type == heap_hton);
++  share.db_low_byte_first = (create_info->db_type == heap_hton);
+ 
+   TABLE tmp_table;
+   tmp_table.s = &share;
+@@ -3410,4 +3409,4 @@ bool Sql_cmd_insert_base::prune_partitions(
+     insert_table->part_info->is_pruning_completed = true;
+   }
+   return false;
+-}
+\ No newline at end of file
++}
+diff --git a/sql/sql_plugin.cc b/sql/sql_plugin.cc
+index 23bbf4b..b435afe 100644
+--- a/sql/sql_plugin.cc
++++ b/sql/sql_plugin.cc
+@@ -1546,8 +1546,7 @@ bool update_persisted_plugin_sysvars(const char *name) {
+ }
+ 
+ /**
+-  Register the builtin plugins. Some of the plugins (MyISAM, CSV and InnoDB)
+-  are also initialized.
++  Register the builtin plugins. InnoDB is also initialized.
+ 
+   @param argc number of arguments, propagated to the plugin
+   @param argv actual arguments, propagated to the plugin
+@@ -1626,21 +1625,16 @@ bool plugin_register_builtin_and_init_core_se(int *argc, char **argv) {
+         disable_extra_plugins = true;
+ 
+       /*
+-        Only initialize daemon_keyring_proxy, MyISAM, InnoDB and CSV at this
+-        stage. Note that when the --help option is supplied,
+-        daemon_keyring_proxy and InnoDB are not initialized because the plugin
+-        table will not be read anyway, as indicated by the flag set when the
+-        plugin_init() function is called.
++        Only initialize daemon_keyring_proxy and InnoDB at this stage. The
++        InnoDB handlerton is initialized here so it can be used as the
++        initial default storage engine before the data dictionary is opened.
+       */
+       const bool is_daemon_keyring_proxy = !my_strcasecmp(
+           &my_charset_latin1, plugin->name, "daemon_keyring_proxy_plugin");
+-      const bool is_myisam =
+-          !my_strcasecmp(&my_charset_latin1, plugin->name, "MyISAM");
+       const bool is_innodb =
+           !my_strcasecmp(&my_charset_latin1, plugin->name, "InnoDB");
+       if ((!is_daemon_keyring_proxy || is_help_or_validate_option()) &&
+-          !is_myisam && (!is_innodb || is_help_or_validate_option()) &&
+-          my_strcasecmp(&my_charset_latin1, plugin->name, "CSV"))
++          !is_innodb)
+         continue;
+ 
+       if (plugin_ptr->state != PLUGIN_IS_UNINITIALIZED ||
+@@ -1657,7 +1651,7 @@ bool plugin_register_builtin_and_init_core_se(int *argc, char **argv) {
+         Initialize the global default storage engine so that it may
+         not be null in any child thread.
+       */
+-      if (is_myisam) {
++      if (is_innodb) {
+         assert(!global_system_variables.table_plugin);
+         assert(!global_system_variables.temp_table_plugin);
+         global_system_variables.table_plugin =
+@@ -1669,7 +1663,7 @@ bool plugin_register_builtin_and_init_core_se(int *argc, char **argv) {
+     }
+   }
+ 
+-  /* Should now be set to MyISAM storage engine */
++  /* Should now be set to InnoDB storage engine */
+   assert(global_system_variables.table_plugin);
+   assert(global_system_variables.temp_table_plugin);
+ 
+diff --git a/sql/sys_vars.cc b/sql/sys_vars.cc
+index 540d280..c187691 100644
+--- a/sql/sys_vars.cc
++++ b/sql/sys_vars.cc
+@@ -85,7 +85,6 @@
+ #include "my_thread.h"
+ #include "my_thread_local.h"
+ #include "my_time.h"
+-#include "myisam.h"                           // myisam_flush
+ #include "mysql/binlog/event/binlog_event.h"  // mysql::binlog::event::max_log_event_size
+ #include "mysql/binlog/event/compression/zstd_comp.h"  // DEFAULT_COMPRESSION_LEVEL
+ #include "mysql/plugin_group_replication.h"
+@@ -2006,15 +2005,6 @@ static Sys_var_struct<CHARSET_INFO, Get_name> Sys_collation_server(
+     SESSION_VAR(collation_server), NO_CMD_LINE, DEFAULT(&default_charset_info),
+     NO_MUTEX_GUARD, IN_BINLOG, ON_CHECK(check_collation_not_null));
+ 
+-static const char *concurrent_insert_names[] = {"NEVER", "AUTO", "ALWAYS",
+-                                                nullptr};
+-static Sys_var_enum Sys_concurrent_insert(
+-    "concurrent_insert",
+-    "Use concurrent insert with MyISAM. Possible "
+-    "values are NEVER, AUTO, ALWAYS",
+-    GLOBAL_VAR(myisam_concurrent_insert), CMD_LINE(OPT_ARG),
+-    concurrent_insert_names, DEFAULT(1));
+-
+ static Sys_var_ulong Sys_connect_timeout(
+     "connect_timeout",
+     "The number of seconds the mysqld server is waiting for a connect "
+@@ -2041,34 +2031,6 @@ static Sys_var_dbug Sys_dbug("debug", "Debug log", sys_var::SESSION,
+                              ON_CHECK(check_session_admin));
+ #endif
+ 
+-/**
+-  @todo
+-    When updating myisam_delay_key_write, we should do a 'flush tables'
+-    of all MyISAM tables to ensure that they are reopen with the
+-    new attribute.
+-*/
+-export bool fix_delay_key_write(sys_var *, THD *, enum_var_type) {
+-  switch (delay_key_write_options) {
+-    case DELAY_KEY_WRITE_NONE:
+-      myisam_delay_key_write = false;
+-      break;
+-    case DELAY_KEY_WRITE_ON:
+-      myisam_delay_key_write = true;
+-      break;
+-    case DELAY_KEY_WRITE_ALL:
+-      myisam_delay_key_write = true;
+-      ha_open_options |= HA_OPEN_DELAY_KEY_WRITE;
+-      break;
+-  }
+-  return false;
+-}
+-static const char *delay_key_write_names[] = {"OFF", "ON", "ALL", NullS};
+-static Sys_var_enum Sys_delay_key_write(
+-    "delay_key_write", "Type of DELAY_KEY_WRITE",
+-    GLOBAL_VAR(delay_key_write_options), CMD_LINE(OPT_ARG),
+-    delay_key_write_names, DEFAULT(DELAY_KEY_WRITE_ON), NO_MUTEX_GUARD,
+-    NOT_IN_BINLOG, ON_CHECK(nullptr), ON_UPDATE(fix_delay_key_write));
+-
+ static Sys_var_ulong Sys_delayed_insert_limit(
+     "delayed_insert_limit",
+     "After inserting delayed_insert_limit rows, the INSERT DELAYED "
+@@ -2172,10 +2134,6 @@ static Sys_var_bool Sys_binlog_expire_logs_auto_purge(
+     DEFAULT(true), NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(nullptr),
+     ON_UPDATE(nullptr), nullptr, sys_var::PARSE_EARLY);
+ 
+-static Sys_var_bool Sys_flush(
+-    "flush", "Flush MyISAM tables to disk between SQL commands",
+-    GLOBAL_VAR(myisam_flush), CMD_LINE(OPT_ARG), DEFAULT(false));
+-
+ static Sys_var_ulong Sys_flush_time(
+     "flush_time",
+     "A dedicated thread is created to flush all tables at the "
+@@ -7541,4 +7499,4 @@ Sys_var_bool Sys_restrict_fk_on_non_standard_key(
+     NON_PERSIST SESSION_VAR(restrict_fk_on_non_standard_key), CMD_LINE(OPT_ARG),
+     DEFAULT(true), NO_MUTEX_GUARD, NOT_IN_BINLOG,
+     ON_CHECK(restrict_fk_on_non_standard_key_check), ON_UPDATE(nullptr));
+-}  // namespace
+\ No newline at end of file
++}  // namespace
+
