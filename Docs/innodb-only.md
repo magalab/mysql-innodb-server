@@ -1,4 +1,7 @@
-# InnoDB-only implementation plan
+# MySQL InnoDB Server implementation plan
+
+| 中文 | [English](../README.en.md) |
+| --- | --- |
 
 ## Current target
 
@@ -22,7 +25,7 @@
 - 移除 MyISAM 专属全文检索全局变量和启动校验；InnoDB FTS 保留其自身配置路径；
 - 工具、man page 和安装清单仍待下一轮清理；当前先保证 Server 核心能够脱离这三个引擎源码构建。
 
-验证结果：应用 `0001`—`0008`、执行 `optional` 和 `user` 裁剪后，CMake 配置成功，`mysqld` 目标成功链接；生成的 builtin plugin list 不包含 MyISAM、CSV、MRG_MYISAM 或 NDB。由于默认引擎改为 InnoDB，补丁同时让 HEAP、TempTable 在启动早期完成初始化，让 `--help`/`--validate-config` 路径跳过尚未可用的 InnoDB PFS 服务，并把 general/slow log 系统表从 CSV 改为 InnoDB，以支持无 CSV 引擎的全新 datadir 初始化。
+验证结果：应用 `0001`—`0006`、执行 `optional` 和 `user` 裁剪后，CMake 配置成功，`mysqld` 目标成功链接；生成的 builtin plugin list 不包含 MyISAM、CSV、MRG_MYISAM 或 NDB。由于默认引擎改为 InnoDB，补丁同时让 HEAP、TempTable 在启动早期完成初始化，让 `--help`/`--validate-config` 路径跳过尚未可用的 InnoDB PFS 服务，并把 general/slow log 系统表从 CSV 改为 InnoDB，以支持无 CSV 引擎的全新 datadir 初始化。
 
 ### Docker packaging
 

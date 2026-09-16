@@ -1,5 +1,5 @@
 diff --git a/sql/handler.cc b/sql/handler.cc
-index 7513588..c2bd6c1 100644
+index 7513588..dbf4062 100644
 --- a/sql/handler.cc
 +++ b/sql/handler.cc
 @@ -866,9 +866,6 @@ int ha_initialize_handlerton(st_plugin_int *plugin) {
@@ -12,7 +12,63 @@ index 7513588..c2bd6c1 100644
      case DB_TYPE_INNODB:
        innodb_hton = hton;
        break;
-@@ -5695,7 +5692,8 @@ int ha_resize_key_cache(KEY_CACHE *key_cache) {
+@@ -5642,31 +5639,14 @@ bool default_rm_tmp_tables(handlerton *hton, THD *, List<LEX_STRING> *files) {
+ }
+ 
+ /*****************************************************************************
+-  Key cache handling.
+-
+-  This code is only relevant for ISAM/MyISAM tables
+-
+-  key_cache->cache may be 0 only in the case where a key cache is not
+-  initialized or when we where not able to init the key cache in a previous
+-  call to ha_init_key_cache() (probably out of memory)
++  Legacy key cache handling. InnoDB does not use the MyISAM key cache.
+ *****************************************************************************/
+ 
+ /**
+   Init a key cache if it has not been initied before.
+ */
+ int ha_init_key_cache(std::string_view, KEY_CACHE *key_cache) {
+-  DBUG_TRACE;
+-
+-  if (!key_cache->key_cache_inited) {
+-    mysql_mutex_lock(&LOCK_global_system_variables);
+-    const size_t tmp_buff_size = (size_t)key_cache->param_buff_size;
+-    const ulonglong tmp_block_size = key_cache->param_block_size;
+-    const ulonglong division_limit = key_cache->param_division_limit;
+-    const ulonglong age_threshold = key_cache->param_age_threshold;
+-    mysql_mutex_unlock(&LOCK_global_system_variables);
+-    return !init_key_cache(key_cache, tmp_block_size, tmp_buff_size,
+-                           division_limit, age_threshold);
+-  }
++  (void)key_cache;
+   return 0;
+ }
+ 
+@@ -5674,20 +5654,7 @@ int ha_init_key_cache(std::string_view, KEY_CACHE *key_cache) {
+   Resize key cache.
+ */
+ int ha_resize_key_cache(KEY_CACHE *key_cache) {
+-  DBUG_TRACE;
+-
+-  if (key_cache->key_cache_inited) {
+-    mysql_mutex_lock(&LOCK_global_system_variables);
+-    const size_t tmp_buff_size = (size_t)key_cache->param_buff_size;
+-    const ulonglong tmp_block_size = key_cache->param_block_size;
+-    const ulonglong division_limit = key_cache->param_division_limit;
+-    const ulonglong age_threshold = key_cache->param_age_threshold;
+-    mysql_mutex_unlock(&LOCK_global_system_variables);
+-    const int retval =
+-        resize_key_cache(key_cache, keycache_thread_var(), tmp_block_size,
+-                         tmp_buff_size, division_limit, age_threshold);
+-    return !retval;
+-  }
++  (void)key_cache;
+   return 0;
+ }
+ 
+@@ -5695,7 +5662,8 @@ int ha_resize_key_cache(KEY_CACHE *key_cache) {
    Move all tables from one key cache to another one.
  */
  int ha_change_key_cache(KEY_CACHE *old_key_cache, KEY_CACHE *new_key_cache) {
@@ -23,7 +79,7 @@ index 7513588..c2bd6c1 100644
  }
  
 diff --git a/sql/mysqld.cc b/sql/mysqld.cc
-index 0769751..feba758 100644
+index b085aba..b28d22d 100644
 --- a/sql/mysqld.cc
 +++ b/sql/mysqld.cc
 @@ -716,7 +716,6 @@ MySQL clients support the protocol:
@@ -42,7 +98,7 @@ index 0769751..feba758 100644
  #include "storage/perfschema/pfs_buffer_container.h"  // PFS metric counters
  #include "storage/perfschema/pfs_instr_class.h"       // PFS metric counters
  #include "storage/perfschema/pfs_services.h"
-@@ -1261,7 +1259,6 @@ bool opt_replica_allow_batching = true;
+@@ -1262,7 +1260,6 @@ bool opt_replica_allow_batching = true;
  */
  handlerton *heap_hton;
  handlerton *temptable_hton;
@@ -50,7 +106,7 @@ index 0769751..feba758 100644
  handlerton *innodb_hton;
  
  char *opt_disabled_storage_engines;
-@@ -1279,7 +1276,6 @@ bool opt_log_slow_replica_statements = false;
+@@ -1280,7 +1277,6 @@ bool opt_log_slow_replica_statements = false;
  bool lower_case_file_system = false;
  bool opt_large_pages = false;
  bool opt_super_large_pages = false;
@@ -58,7 +114,7 @@ index 0769751..feba758 100644
  std::atomic<bool> offline_mode;
  uint opt_large_page_size = 0;
  uint default_password_lifetime = 0;
-@@ -1338,7 +1334,6 @@ const char *timestamp_type_names[] = {"UTC", "SYSTEM", NullS};
+@@ -1339,7 +1335,6 @@ const char *timestamp_type_names[] = {"UTC", "SYSTEM", NullS};
  ulong opt_log_timestamps;
  uint mysqld_port, test_flags, select_errors, ha_open_options;
  uint mysqld_port_timeout;
@@ -66,7 +122,7 @@ index 0769751..feba758 100644
  uint protocol_version;
  uint lower_case_table_names;
  long tc_heuristic_recover;
-@@ -1677,7 +1672,6 @@ char *opt_general_logname, *opt_slow_logname, *opt_bin_logname;
+@@ -1678,7 +1673,6 @@ char *opt_general_logname, *opt_slow_logname, *opt_bin_logname;
  bool binlog_expire_logs_seconds_supplied = false;
  /* Static variables */
  
@@ -74,7 +130,7 @@ index 0769751..feba758 100644
  static ulong opt_specialflag;
  char *opt_binlog_index_name;
  char *mysql_home_ptr, *pidfile_name_ptr;
-@@ -6298,50 +6292,6 @@ static PSI_metric_info_v1 handler_metrics[] = {
+@@ -6299,50 +6293,6 @@ static PSI_metric_info_v1 handler_metrics[] = {
       get_metric_aggregated_integer,
       (void *)offsetof(aggregated_stats_buffer, ha_write_count)}};
  
@@ -125,7 +181,7 @@ index 0769751..feba758 100644
  static PSI_metric_info_v1 ssl_metrics[] = {
      {"client_connects", "",
       "The number of SSL connection attempts to an SSL-enabled replication "
-@@ -6411,9 +6361,7 @@ static PSI_meter_info_v1 core_meters[] = {
+@@ -6412,9 +6362,7 @@ static PSI_meter_info_v1 core_meters[] = {
      {"mysql.stats.handler", "MySql handler stats", 10, 0, 0, handler_metrics,
       std::size(handler_metrics)},
      {"mysql.stats.ssl", "MySql TLS related stats", 10, 0, 0, ssl_metrics,
@@ -136,7 +192,7 @@ index 0769751..feba758 100644
  #endif /* HAVE_PSI_METRICS_INTERFACE */
  
  void register_server_metric_sources() {
-@@ -8578,8 +8526,6 @@ static int init_server_components() {
+@@ -8585,8 +8533,6 @@ static int init_server_components() {
        LogErr(WARNING_LEVEL, ER_NEED_LOG_BIN, "--binlog-expire-logs-seconds");
    }
  
@@ -145,7 +201,7 @@ index 0769751..feba758 100644
  #if defined(HAVE_MLOCKALL) && defined(MCL_CURRENT)
    if (locked_in_memory && !getuid()) {
      if (setreuid((uid_t)-1, 0) == -1) {  // this should never happen
-@@ -10654,7 +10600,7 @@ struct my_option my_long_options[] = {
+@@ -10661,7 +10607,7 @@ struct my_option my_long_options[] = {
       nullptr},
      {"core-file", OPT_WANT_CORE, "Write core on errors.", nullptr, nullptr,
       nullptr, GET_NO_ARG, NO_ARG, 0, 0, 0, nullptr, 0, nullptr},
@@ -154,7 +210,7 @@ index 0769751..feba758 100644
         of initializing it here it is done in init_common_variables() due
         to a compiler bug in Sun Studio compiler. */
      {"default-storage-engine", 0, "The default storage engine for new tables",
-@@ -10670,9 +10616,7 @@ struct my_option my_long_options[] = {
+@@ -10677,9 +10623,7 @@ struct my_option my_long_options[] = {
      {"exit-info", 'T', "Used for debugging. Use at your own risk.", nullptr,
       nullptr, nullptr, GET_LONG, OPT_ARG, 0, 0, 0, nullptr, 0, nullptr},
      {"external-locking", 0,
@@ -165,7 +221,7 @@ index 0769751..feba758 100644
       "--skip-external-locking.",
       &opt_external_locking, &opt_external_locking, nullptr, GET_BOOL, NO_ARG, 0,
       0, 0, nullptr, 0, nullptr},
-@@ -10708,9 +10652,6 @@ struct my_option my_long_options[] = {
+@@ -10715,9 +10659,6 @@ struct my_option my_long_options[] = {
      {"relay-log-index", 0, "File that holds the names for relay log files.",
       &opt_relaylog_index_name, &opt_relaylog_index_name, nullptr, GET_STR,
       REQUIRED_ARG, 0, 0, 0, nullptr, 0, nullptr},
@@ -175,7 +231,7 @@ index 0769751..feba758 100644
      {"log-short-format", 0,
       "Don't log extra information to update and slow-query logs.",
       &opt_short_log_format, &opt_short_log_format, nullptr, GET_BOOL, NO_ARG, 0,
-@@ -11850,13 +11791,11 @@ static int mysql_init_variables() {
+@@ -11857,13 +11798,11 @@ static int mysql_init_variables() {
    /* Things reset to zero */
    opt_skip_replica_start = false;
    pidfile_name[0] = 0;
@@ -189,7 +245,7 @@ index 0769751..feba758 100644
    mqh_used = false;
    server_shutting_down = false;
    server_id_supplied = false;
-@@ -12501,9 +12440,6 @@ bool mysqld_get_one_option(int optid,
+@@ -12508,9 +12447,6 @@ bool mysqld_get_one_option(int optid,
        test_flags = argument ? (uint)atoi(argument) : 0;
        opt_endinfo = true;
        break;
@@ -199,7 +255,7 @@ index 0769751..feba758 100644
      case (int)OPT_BIN_LOG:
        opt_bin_log = (argument != disabled_my_option);
        if (!opt_bin_log) {
-@@ -12658,9 +12594,6 @@ bool mysqld_get_one_option(int optid,
+@@ -12665,9 +12601,6 @@ bool mysqld_get_one_option(int optid,
        break;
      case (int)OPT_SKIP_NEW:
        opt_specialflag |= SPECIAL_NO_NEW_FUNC;
@@ -209,7 +265,7 @@ index 0769751..feba758 100644
        sp_automatic_privileges = false;
        my_enable_symlinks = false;
        ha_open_options &= ~(HA_OPEN_ABORT_IF_CRASHED | HA_OPEN_DELAY_KEY_WRITE);
-@@ -12978,8 +12911,6 @@ static int get_options(int *argc_ptr, char ***argv_ptr) {
+@@ -12985,8 +12918,6 @@ static int get_options(int *argc_ptr, char ***argv_ptr) {
  
    if (opt_skip_show_db) opt_specialflag |= SPECIAL_SKIP_SHOW_DB;
  
@@ -218,7 +274,7 @@ index 0769751..feba758 100644
    if (opt_replica_skip_errors) add_replica_skip_errors(opt_replica_skip_errors);
  
    if (global_system_variables.max_join_size == HA_POS_ERROR)
-@@ -13019,9 +12950,6 @@ static int get_options(int *argc_ptr, char ***argv_ptr) {
+@@ -13026,9 +12957,6 @@ static int get_options(int *argc_ptr, char ***argv_ptr) {
      test_flags |= TEST_SIGINT | TEST_NO_STACKTRACE;
      test_flags &= ~TEST_CORE_ON_SIGNAL;
    }
@@ -228,7 +284,7 @@ index 0769751..feba758 100644
  #ifndef _WIN32
    if (mysqld_chroot) set_root(mysqld_chroot);
  #endif
-@@ -13031,7 +12959,7 @@ static int get_options(int *argc_ptr, char ***argv_ptr) {
+@@ -13038,7 +12966,7 @@ static int get_options(int *argc_ptr, char ***argv_ptr) {
      Set some global variables from the global_system_variables
      In most cases the global variables will not be used
    */
@@ -294,7 +350,7 @@ index ed0b14f..17268f5 100644
 \ No newline at end of file
 +}
 diff --git a/sql/sql_plugin.cc b/sql/sql_plugin.cc
-index 23bbf4b..b435afe 100644
+index 23bbf4b..4c92a13 100644
 --- a/sql/sql_plugin.cc
 +++ b/sql/sql_plugin.cc
 @@ -1546,8 +1546,8 @@ bool update_persisted_plugin_sysvars(const char *name) {
@@ -308,7 +364,7 @@ index 23bbf4b..b435afe 100644
  
    @param argc number of arguments, propagated to the plugin
    @param argv actual arguments, propagated to the plugin
-@@ -1626,21 +1625,20 @@ bool plugin_register_builtin_and_init_core_se(int *argc, char **argv) {
+@@ -1626,21 +1626,20 @@ bool plugin_register_builtin_and_init_core_se(int *argc, char **argv) {
          disable_extra_plugins = true;
  
        /*
@@ -338,7 +394,7 @@ index 23bbf4b..b435afe 100644
          continue;
  
        if (plugin_ptr->state != PLUGIN_IS_UNINITIALIZED ||
-@@ -1657,7 +1651,7 @@ bool plugin_register_builtin_and_init_core_se(int *argc, char **argv) {
+@@ -1657,7 +1656,7 @@ bool plugin_register_builtin_and_init_core_se(int *argc, char **argv) {
          Initialize the global default storage engine so that it may
          not be null in any child thread.
        */
@@ -347,7 +403,7 @@ index 23bbf4b..b435afe 100644
          assert(!global_system_variables.table_plugin);
          assert(!global_system_variables.temp_table_plugin);
          global_system_variables.table_plugin =
-@@ -1669,7 +1663,7 @@ bool plugin_register_builtin_and_init_core_se(int *argc, char **argv) {
+@@ -1669,7 +1668,7 @@ bool plugin_register_builtin_and_init_core_se(int *argc, char **argv) {
      }
    }
  

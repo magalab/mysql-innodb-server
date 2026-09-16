@@ -42,13 +42,13 @@ RUN mkdir -p /opt/src /opt/mysql-runtime \
 
 WORKDIR /opt/src/mysql-${MYSQL_VERSION}
 
-COPY patches /opt/innodb-only-patches/patches
-COPY scripts/apply-patches.sh scripts/prune-source.sh scripts/verify.sh /opt/innodb-only-patches/scripts/
+COPY patches /opt/mysql-innodb-server/patches
+COPY scripts/apply-patches.sh scripts/prune-source.sh scripts/verify.sh /opt/mysql-innodb-server/scripts/
 
-RUN chmod +x /opt/innodb-only-patches/scripts/*.sh \
-    && /opt/innodb-only-patches/scripts/apply-patches.sh . \
-    && CONFIRM_PRUNE=yes /opt/innodb-only-patches/scripts/prune-source.sh optional . \
-    && CONFIRM_PRUNE=yes /opt/innodb-only-patches/scripts/prune-source.sh user .
+RUN chmod +x /opt/mysql-innodb-server/scripts/*.sh \
+    && /opt/mysql-innodb-server/scripts/apply-patches.sh . \
+    && CONFIRM_PRUNE=yes /opt/mysql-innodb-server/scripts/prune-source.sh optional . \
+    && CONFIRM_PRUNE=yes /opt/mysql-innodb-server/scripts/prune-source.sh user .
 
 RUN cmake -S . -B /opt/mysql-build \
     -DCMAKE_BUILD_TYPE=Release \
@@ -66,20 +66,14 @@ RUN cmake -S . -B /opt/mysql-build \
     -DWITH_FIDO=none \
     -DWITH_CURL=none
 
-# Build only the server and the client-side programs needed by the entrypoint.
-# The source tree still has the complete test/developer toolset, but it never
-# enters the runtime stage.
+# Build only the server, required startup component, and client-side programs
+# needed by the entrypoint. The source tree still has the complete
+# test/developer toolset, but it never enters the runtime stage.
 RUN cmake --build /opt/mysql-build \
-    --target mysqld mysql mysqladmin mysql_tzinfo_to_sql \
+    --target mysqld mysql mysqladmin mysql_tzinfo_to_sql component_reference_cache \
     --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
-# mysqld loads this built-in component from lib/plugin at startup, but it is
-# not a dependency of the explicit server/client targets above.
-RUN cmake --build /opt/mysql-build \
-    --target component_reference_cache \
-    --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
-
-RUN /opt/innodb-only-patches/scripts/verify.sh . /opt/mysql-build \
+RUN /opt/mysql-innodb-server/scripts/verify.sh . /opt/mysql-build \
     && install -d /opt/mysql-runtime/bin /opt/mysql-runtime/lib \
     && install -D -m 0755 /opt/mysql-build/runtime_output_directory/mysqld /opt/mysql-runtime/bin/mysqld \
     && install -D -m 0755 /opt/mysql-build/runtime_output_directory/mysql /opt/mysql-runtime/bin/mysql \
@@ -116,6 +110,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LD_LIBRARY_PATH=/usr/local/mysql/lib \
     PATH=/usr/local/mysql/bin:/usr/local/mysql/sbin:${PATH}
 
+LABEL org.opencontainers.image.title="MySQL InnoDB Server" \
+      org.opencontainers.image.description="MySQL Server with InnoDB as the only user-table persistent storage engine" \
+      org.opencontainers.image.version="${MYSQL_VERSION}"
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         bzip2 \
@@ -148,7 +146,7 @@ RUN chmod 0755 /usr/local/bin/docker-entrypoint.sh /usr/local/bin/docker-healthc
     && ln -sf /usr/local/mysql/bin/mysql /usr/local/bin/mysql \
     && ln -sf /usr/local/mysql/bin/mysqladmin /usr/local/bin/mysqladmin \
     && ln -sf /usr/local/mysql/bin/mysql_tzinfo_to_sql /usr/local/bin/mysql_tzinfo_to_sql \
-    && printf '%s\n' "MySQL ${MYSQL_VERSION} InnoDB-only image" > /usr/local/mysql/IMAGE_INFO
+    && printf '%s\n' "MySQL ${MYSQL_VERSION} InnoDB Server image" > /usr/local/mysql/IMAGE_INFO
 
 VOLUME ["/var/lib/mysql"]
 EXPOSE 3306

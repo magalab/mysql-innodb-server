@@ -1,0 +1,96 @@
+diff --git a/include/my_check_opt.h b/include/my_check_opt.h
+index 9e5e6f2..2576eaa 100644
+--- a/include/my_check_opt.h
++++ b/include/my_check_opt.h
+@@ -29,9 +29,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA */
+ */
+ 
+ /*
+-  All given definitions needed for MyISAM storage engine:
+-  myisamchk.c or/and ha_myisam.cc or/and micheck.c
+-  Some definitions are needed by the MySQL parser.
++  Definitions shared by CHECK/REPAIR statements and storage engines.
+ */
+ 
+ #define T_AUTO_INC (1UL << 0)
+@@ -71,4 +69,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA */
+ 
+ #define T_REP_ANY (T_REP | T_REP_BY_SORT)
+ 
++/* SQL-layer flags passed through HA_CHECK_OPT::sql_flags. */
++#define TT_USEFRM 1
++#define TT_FOR_UPGRADE 2
++
+ #endif
+diff --git a/include/myisam.h b/include/myisam.h
+index b1f3353..7b81bec 100644
+--- a/include/myisam.h
++++ b/include/myisam.h
+@@ -308,9 +308,6 @@ extern uint mi_get_pointer_length(ulonglong file_length, uint def);
+   to mi_check.c follows:
+ */
+ 
+-#define TT_USEFRM 1
+-#define TT_FOR_UPGRADE 2
+-
+ #define O_NEW_INDEX 1 /* Bits set in out_flag */
+ #define O_NEW_DATA 2
+ #define O_DATA_LOST 4
+diff --git a/sql/handler.cc b/sql/handler.cc
+index 7513588..9580ec0 100644
+--- a/sql/handler.cc
++++ b/sql/handler.cc
+@@ -55,7 +55,6 @@
+ #include "my_psi_config.h"
+ #include "my_sqlcommand.h"
+ #include "my_sys.h"  // MEM_DEFINED_IF_ADDRESSABLE()
+-#include "myisam.h"  // TT_FOR_UPGRADE
+ #include "mysql/binlog/event/binlog_event.h"
+ #include "mysql/components/services/bits/psi_bits.h"
+ #include "mysql/components/services/log_builtins.h"
+diff --git a/sql/sql_yacc.yy b/sql/sql_yacc.yy
+index cc4becf..5b97919 100644
+--- a/sql/sql_yacc.yy
++++ b/sql/sql_yacc.yy
+@@ -72,8 +72,6 @@ Note: YYTHD is passed as an argument to yyparse(), and subsequently to yylex().
+ #include "my_sys.h"
+ #include "my_thread_local.h"
+ #include "my_time.h"
+-#include "myisam.h"
+-#include "myisammrg.h"
+ #include "mysql/mysql_lex_string.h"
+ #include "mysql/plugin.h"
+ #include "mysql/strings/m_ctype.h"
+@@ -1593,7 +1591,7 @@ void warn_on_deprecated_user_defined_collation(
+         delete_option
+ 
+ %type <ulong_num>
+-        ulong_num real_ulong_num merge_insert_types
++        ulong_num real_ulong_num
+         ws_num_codepoints func_datetime_precision
+         now
+         opt_checksum_type
+@@ -6651,10 +6649,6 @@ create_table_option:
+           {
+             $$= NEW_PTN PT_create_table_default_collation(@$, $1);
+           }
+-        | INSERT_METHOD opt_equal merge_insert_types
+-          {
+-            $$= NEW_PTN PT_create_insert_method_option(@$, $3);
+-          }
+         | DATA_SYM DIRECTORY_SYM opt_equal TEXT_STRING_sys
+           {
+             $$= NEW_PTN PT_create_data_directory_option(@$, $4.str);
+@@ -6750,12 +6744,6 @@ row_types:
+         | COMPACT_SYM    { $$= ROW_TYPE_COMPACT; }
+         ;
+ 
+-merge_insert_types:
+-         NO_SYM          { $$= MERGE_INSERT_DISABLED; }
+-       | FIRST_SYM       { $$= MERGE_INSERT_TO_FIRST; }
+-       | LAST_SYM        { $$= MERGE_INSERT_TO_LAST; }
+-       ;
+-
+ udf_type:
+           STRING_SYM {$$ = (int) STRING_RESULT; }
+         | REAL_SYM {$$ = (int) REAL_RESULT; }
