@@ -1,0 +1,29 @@
+diff --git a/sql/sql_yacc.yy b/sql/sql_yacc.yy
+--- a/sql/sql_yacc.yy
++++ b/sql/sql_yacc.yy
+@@ -1593,3 +1593,3 @@
+ %type <ulong_num>
+-        ulong_num real_ulong_num merge_insert_types
++        ulong_num real_ulong_num
+         ws_num_codepoints func_datetime_precision
+@@ -6648,10 +6648,6 @@
+         | default_collation
+           {
+             $$= NEW_PTN PT_create_table_default_collation(@$, $1);
+           }
+-        | INSERT_METHOD opt_equal merge_insert_types
+-          {
+-            $$= NEW_PTN PT_create_insert_method_option(@$, $3);
+-          }
+         | DATA_SYM DIRECTORY_SYM opt_equal TEXT_STRING_sys
+           {
+@@ -6745,9 +6745,3 @@
+         ;
+ 
+-merge_insert_types:
+-         NO_SYM          { $$= MERGE_INSERT_DISABLED; }
+-       | FIRST_SYM       { $$= MERGE_INSERT_TO_FIRST; }
+-       | LAST_SYM        { $$= MERGE_INSERT_TO_LAST; }
+-       ;
+-
+ udf_type:
