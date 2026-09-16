@@ -49,7 +49,7 @@ docker run -d --name mysql-innodb-only \
   mysql-innodb-only:8.4.11
 ```
 
-入口脚本兼容官方镜像常用的 `MYSQL_ROOT_PASSWORD[_FILE]`、`MYSQL_DATABASE`、`MYSQL_USER`、`MYSQL_PASSWORD[_FILE]`、`MYSQL_ALLOW_EMPTY_PASSWORD`、`MYSQL_RANDOM_ROOT_PASSWORD` 和 `/docker-entrypoint-initdb.d` 初始化文件约定；支持 `.sh`、`.sql`、`.sql.bz2`、`.sql.gz`、`.sql.xz`、`.sql.zst`。MySQL X Plugin 被关闭，因此镜像只暴露经典协议端口 `3306`。
+入口脚本兼容官方镜像常用的 `MYSQL_ROOT_PASSWORD[_FILE]`、`MYSQL_ROOT_HOST[_FILE]`、`MYSQL_DATABASE`、`MYSQL_USER`、`MYSQL_PASSWORD[_FILE]`、`MYSQL_ALLOW_EMPTY_PASSWORD`、`MYSQL_RANDOM_ROOT_PASSWORD` 和 `/docker-entrypoint-initdb.d` 初始化文件约定；未设置 `MYSQL_ROOT_HOST` 时默认创建 `root@'%'`，便于 GUI 或其他容器通过 TCP 连接。支持 `.sh`、`.sql`、`.sql.bz2`、`.sql.gz`、`.sql.xz`、`.sql.zst`。MySQL X Plugin 被关闭，因此镜像只暴露经典协议端口 `3306`。
 
 当前 Dockerfile 对应 M2 状态：用户可创建表的持久化存储引擎目标是 InnoDB，但 HEAP、TempTable 和 Performance Schema 仍是 Server 内部路径，尚未达到“`SHOW ENGINES` 只剩 InnoDB”的严格 M3 目标。构建产物不能在严格目标完成前宣称为完全严格的 InnoDB-only Server。
 

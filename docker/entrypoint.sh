@@ -119,7 +119,7 @@ fi
 server_args=("${@:2}")
 
 file_env MYSQL_ROOT_PASSWORD
-file_env MYSQL_ROOT_HOST
+file_env MYSQL_ROOT_HOST '%'
 file_env MYSQL_DATABASE
 file_env MYSQL_USER
 file_env MYSQL_PASSWORD
