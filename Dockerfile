@@ -32,6 +32,8 @@ RUN apt-get update \
 
 RUN mkdir -p /opt/src /opt/mysql-runtime \
     && curl --fail --location --silent --show-error \
+        --continue-at - \
+        --retry 10 --retry-all-errors --retry-delay 5 --retry-max-time 3600 \
         "${MYSQL_SOURCE_URL}" --output /tmp/mysql-source.tar.gz \
     && echo "${MYSQL_SOURCE_SHA256}  /tmp/mysql-source.tar.gz" | sha256sum --check --strict \
     && tar --extract --gzip --file /tmp/mysql-source.tar.gz --directory /opt/src \
@@ -71,6 +73,12 @@ RUN cmake --build /opt/mysql-build \
     --target mysqld mysql mysqladmin mysql_tzinfo_to_sql \
     --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
+# mysqld loads this built-in component from lib/plugin at startup, but it is
+# not a dependency of the explicit server/client targets above.
+RUN cmake --build /opt/mysql-build \
+    --target component_reference_cache \
+    --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
 RUN /opt/innodb-only-patches/scripts/verify.sh . /opt/mysql-build \
     && install -d /opt/mysql-runtime/bin /opt/mysql-runtime/lib \
     && install -D -m 0755 /opt/mysql-build/runtime_output_directory/mysqld /opt/mysql-runtime/bin/mysqld \
@@ -80,7 +88,12 @@ RUN /opt/innodb-only-patches/scripts/verify.sh . /opt/mysql-build \
     && cp -a /opt/mysql-build/share /opt/mysql-runtime/ \
     && find /opt/mysql-runtime/share -type d -name CMakeFiles -prune -exec rm -rf {} + \
     && find /opt/mysql-build/library_output_directory -maxdepth 1 \( -type f -o -type l \) -name 'lib*.so*' -exec cp -a {} /opt/mysql-runtime/lib/ \; \
-    && if test -d /opt/mysql-build/library_output_directory/private; then cp -a /opt/mysql-build/library_output_directory/private /opt/mysql-runtime/lib/; fi \
+    && install -d /opt/mysql-runtime/lib/plugin /opt/mysql-runtime/lib/private \
+    && find /opt/mysql-build/plugin_output_directory -maxdepth 1 \( -type f -o -type l \) -exec cp -a {} /opt/mysql-runtime/lib/plugin/ \; \
+    && if test -d /opt/mysql-build/library_output_directory/private; then cp -a /opt/mysql-build/library_output_directory/private/. /opt/mysql-runtime/lib/private/; fi \
+    && icu_data_dir=icudt77l \
+    && if test "$(uname -m)" = s390x; then icu_data_dir=icudt77b; fi \
+    && cp -a "/opt/src/mysql-${MYSQL_VERSION}/extra/icu/${icu_data_dir}" /opt/mysql-runtime/lib/private/ \
     && test -x /opt/mysql-runtime/bin/mysqld \
     && test -x /opt/mysql-runtime/bin/mysql \
     && test -x /opt/mysql-runtime/bin/mysqladmin \
@@ -112,6 +125,7 @@ RUN apt-get update \
         libssl3t64 \
         libtirpc3t64 \
         libtinfo6 \
+        tzdata \
         xz-utils \
         zstd \
     && rm -rf /var/lib/apt/lists/* \
