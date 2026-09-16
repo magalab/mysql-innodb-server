@@ -297,17 +297,18 @@ diff --git a/sql/sql_plugin.cc b/sql/sql_plugin.cc
 index 23bbf4b..b435afe 100644
 --- a/sql/sql_plugin.cc
 +++ b/sql/sql_plugin.cc
-@@ -1546,8 +1546,7 @@ bool update_persisted_plugin_sysvars(const char *name) {
+@@ -1546,8 +1546,8 @@ bool update_persisted_plugin_sysvars(const char *name) {
  }
  
  /**
 -  Register the builtin plugins. Some of the plugins (MyISAM, CSV and InnoDB)
 -  are also initialized.
-+  Register the builtin plugins. InnoDB is also initialized.
++  Register the builtin plugins. The built-in temporary engines and InnoDB are
++  also initialized.
  
    @param argc number of arguments, propagated to the plugin
    @param argv actual arguments, propagated to the plugin
-@@ -1626,21 +1625,16 @@ bool plugin_register_builtin_and_init_core_se(int *argc, char **argv) {
+@@ -1626,21 +1625,20 @@ bool plugin_register_builtin_and_init_core_se(int *argc, char **argv) {
          disable_extra_plugins = true;
  
        /*
@@ -316,20 +317,24 @@ index 23bbf4b..b435afe 100644
 -        daemon_keyring_proxy and InnoDB are not initialized because the plugin
 -        table will not be read anyway, as indicated by the flag set when the
 -        plugin_init() function is called.
-+        Only initialize daemon_keyring_proxy and InnoDB at this stage. The
-+        InnoDB handlerton is initialized here so it can be used as the
-+        initial default storage engine before the data dictionary is opened.
++        Initialize daemon_keyring_proxy, HEAP, TempTable, and InnoDB at this
++        stage. HEAP and TempTable are needed by the startup cost model before
++        dynamic plugins are initialized; InnoDB is the default table engine.
        */
        const bool is_daemon_keyring_proxy = !my_strcasecmp(
            &my_charset_latin1, plugin->name, "daemon_keyring_proxy_plugin");
 -      const bool is_myisam =
 -          !my_strcasecmp(&my_charset_latin1, plugin->name, "MyISAM");
++      const bool is_heap =
++          !my_strcasecmp(&my_charset_latin1, plugin->name, "MEMORY");
++      const bool is_temptable =
++          !my_strcasecmp(&my_charset_latin1, plugin->name, "TempTable");
        const bool is_innodb =
            !my_strcasecmp(&my_charset_latin1, plugin->name, "InnoDB");
        if ((!is_daemon_keyring_proxy || is_help_or_validate_option()) &&
 -          !is_myisam && (!is_innodb || is_help_or_validate_option()) &&
 -          my_strcasecmp(&my_charset_latin1, plugin->name, "CSV"))
-+          !is_innodb)
++          !is_heap && !is_temptable && !is_innodb)
          continue;
  
        if (plugin_ptr->state != PLUGIN_IS_UNINITIALIZED ||
@@ -432,4 +437,3 @@ index 540d280..c187691 100644
 -}  // namespace
 \ No newline at end of file
 +}  // namespace
-

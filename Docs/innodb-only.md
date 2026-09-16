@@ -22,7 +22,13 @@
 - 移除 MyISAM 专属全文检索全局变量和启动校验；InnoDB FTS 保留其自身配置路径；
 - 工具、man page 和安装清单仍待下一轮清理；当前先保证 Server 核心能够脱离这三个引擎源码构建。
 
-验证结果：应用 `0001`—`0006`、执行 `optional` 和 `user` 裁剪后，CMake 配置成功，`mysqld` 目标成功链接；生成的 builtin plugin list 不包含 MyISAM、CSV、MRG_MYISAM 或 NDB。
+验证结果：应用 `0001`—`0008`、执行 `optional` 和 `user` 裁剪后，CMake 配置成功，`mysqld` 目标成功链接；生成的 builtin plugin list 不包含 MyISAM、CSV、MRG_MYISAM 或 NDB。由于默认引擎改为 InnoDB，补丁同时让 HEAP、TempTable 在启动早期完成初始化，让 `--help`/`--validate-config` 路径跳过尚未可用的 InnoDB PFS 服务，并把 general/slow log 系统表从 CSV 改为 InnoDB，以支持无 CSV 引擎的全新 datadir 初始化。
+
+### Docker packaging
+
+`../Dockerfile` 使用 Ubuntu 24.04 多阶段构建：builder 下载并校验 MySQL 8.4.11 源码，回放本仓库补丁并执行 `optional`、`user` 裁剪；runtime 只复制 `mysqld`、初始化需要的客户端、运行时库、字符集/错误消息资源和 Docker 入口文件。它复用了官方镜像的初始化变量和 `/docker-entrypoint-initdb.d` 约定，同时保持 Ubuntu 风格的 `/etc/mysql/my.cnf` 与 `conf.d` 配置目录。
+
+当前镜像仍对应 M2：HEAP、TempTable 和 Performance Schema 没有删除。因此它是“用户表仅保留 InnoDB”的镜像基线，不是 `SHOW ENGINES` 严格只显示 InnoDB 的最终 M3 版本。
 
 ### M3: strict engine cleanup
 

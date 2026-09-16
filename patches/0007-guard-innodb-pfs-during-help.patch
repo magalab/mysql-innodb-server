@@ -1,0 +1,11 @@
+diff --git a/storage/innobase/handler/ha_innodb.cc b/storage/innobase/handler/ha_innodb.cc
+--- a/storage/innobase/handler/ha_innodb.cc
++++ b/storage/innobase/handler/ha_innodb.cc
+@@ -250,6 +250,6 @@ static bool intitialize_service_handles() {
+ 
+   /* During initialize, PFS is not ready. */
+-  if (!opt_initialize &&
++  if (!opt_initialize && !is_help_or_validate_option() &&
+       !log_pfs_acquire_services(innobase::component_services::reg_srv)) {
+     ib::warn(ER_IB_MSG_LOG_PFS_ACQUIRE_SERVICES_FAILED);
+   }

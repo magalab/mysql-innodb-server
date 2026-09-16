@@ -28,9 +28,20 @@ done
 
 echo "optional component source check: OK"
 
+search_file() {
+  local pattern="$1"
+  local file="$2"
+
+  if command -v rg >/dev/null 2>&1; then
+    rg -q -- "$pattern" "$file"
+  else
+    grep -Eq -- "$pattern" "$file"
+  fi
+}
+
 if [[ -n "$build_dir" && -f "$build_dir/CMakeCache.txt" ]]; then
   for engine in ARCHIVE BLACKHOLE FEDERATED NDBCLUSTER; do
-    if rg -q "WITH_${engine}_STORAGE_ENGINE:.*=(ON|1)" "$build_dir/CMakeCache.txt"; then
+    if search_file "WITH_${engine}_STORAGE_ENGINE:.*=(ON|1)" "$build_dir/CMakeCache.txt"; then
       echo "unexpected enabled engine in CMake cache: $engine" >&2
       exit 1
     fi
@@ -41,7 +52,7 @@ if [[ -n "$build_dir" && -f "$build_dir/CMakeCache.txt" ]]; then
   if [[ -f "$builtin_file" ]]; then
     for plugin in builtin_myisam_plugin builtin_csv_plugin \
       builtin_myisammrg_plugin builtin_ndbcluster_plugin; do
-      if rg -q "$plugin" "$builtin_file"; then
+      if search_file "$plugin" "$builtin_file"; then
         echo "unexpected builtin plugin: $plugin" >&2
         exit 1
       fi
