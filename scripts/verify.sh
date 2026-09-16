@@ -30,10 +30,22 @@ echo "optional component source check: OK"
 
 if [[ -n "$build_dir" && -f "$build_dir/CMakeCache.txt" ]]; then
   for engine in ARCHIVE BLACKHOLE FEDERATED NDBCLUSTER; do
-    if grep -Eq "WITH_${engine}_STORAGE_ENGINE:.*=(ON|1)" "$build_dir/CMakeCache.txt"; then
+    if rg -q "WITH_${engine}_STORAGE_ENGINE:.*=(ON|1)" "$build_dir/CMakeCache.txt"; then
       echo "unexpected enabled engine in CMake cache: $engine" >&2
       exit 1
     fi
   done
   echo "optional component CMake check: OK"
+
+  builtin_file="$build_dir/sql/sql_builtin.cc"
+  if [[ -f "$builtin_file" ]]; then
+    for plugin in builtin_myisam_plugin builtin_csv_plugin \
+      builtin_myisammrg_plugin builtin_ndbcluster_plugin; do
+      if rg -q "$plugin" "$builtin_file"; then
+        echo "unexpected builtin plugin: $plugin" >&2
+        exit 1
+      fi
+    done
+    echo "builtin plugin check: OK"
+  fi
 fi
