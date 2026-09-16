@@ -1,0 +1,35 @@
+diff --git a/sql/CMakeLists.txt b/sql/CMakeLists.txt
+--- a/sql/CMakeLists.txt
++++ b/sql/CMakeLists.txt
+@@ -284,7 +284,6 @@ SET(DD_SOURCES
+ 
+   dd/performance_schema/init.cc
+ 
+-  dd/ndbinfo_schema/init.cc
+ )
+ 
+ SET(SQL_GIS_SOURCES
+diff --git a/sql/mysqld.cc b/sql/mysqld.cc
+--- a/sql/mysqld.cc
++++ b/sql/mysqld.cc
+@@ -986,7 +986,6 @@ MySQL clients support the protocol:
+ #include "sql/dd/dd.h"                   // dd::shutdown
+ #include "sql/dd/dd_kill_immunizer.h"    // dd::DD_kill_immunizer
+ #include "sql/dd/dictionary.h"           // dd::get_dictionary
+-#include "sql/dd/ndbinfo_schema/init.h"  // dd::ndbinfo::init_schema_and_tables()
+ #include "sql/dd/performance_schema/init.h"  // performance_schema::init
+ #include "sql/dd/upgrade/server.h"  // dd::upgrade::upgrade_system_schemas
+ #include "sql/server_component/component_sys_var_service_imp.h"
+@@ -8450,12 +8449,6 @@ static int init_server_components() {
+     unireg_abort(MYSQLD_ABORT_EXIT);
+   }
+ 
+-  /* Initialize ndbinfo tables in DD */
+-  if (dd::ndbinfo::init_schema_and_tables(opt_upgrade_mode)) {
+-    LogErr(ERROR_LEVEL, ER_NDBINFO_UPGRADING_SCHEMA_FAIL);
+-    unireg_abort(1);
+-  }
+-
+   if (opt_initialize) log_output_options = LOG_FILE;
+ 
+   /*

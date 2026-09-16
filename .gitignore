@@ -1,0 +1,8 @@
+# Build output and temporary source worktrees stay outside this repository.
+/build/
+/build-*/
+/source-work/
+*.log
+*.tar
+*.tar.gz
+*.tar.xz
