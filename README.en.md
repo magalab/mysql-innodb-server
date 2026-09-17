@@ -26,9 +26,19 @@ The build context only needs this repository. The Docker builder downloads the o
 ```bash
 cd /path/to/mysql-innodb-server
 docker build --progress=plain \
-  --build-arg CMAKE_BUILD_PARALLEL_LEVEL=4 \
+  --build-arg CMAKE_BUILD_PARALLEL_LEVEL=2 \
   -t ghcr.io/magalab/mysql-innodb-server:8.4.11 .
 ```
+
+### GitHub Actions publishing
+
+Pushing a Git tag such as `8.4.11` or `v8.4.11` runs `.github/workflows/publish-ghcr.yml`, which builds `linux/amd64` and `linux/arm64` and publishes:
+
+```text
+ghcr.io/magalab/mysql-innodb-server:<Git tag>
+```
+
+The workflow reads the source version, download URL, and SHA-256 from `SOURCE.sha256`, and requires the Git tag to match the source version. When upgrading MySQL, update `SOURCE.sha256`, rebase and validate the patches, and only then create the corresponding Git tag.
 
 ### Start the server
 

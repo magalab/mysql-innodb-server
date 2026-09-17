@@ -26,9 +26,19 @@
 ```bash
 cd /path/to/mysql-innodb-server
 docker build --progress=plain \
-  --build-arg CMAKE_BUILD_PARALLEL_LEVEL=4 \
+  --build-arg CMAKE_BUILD_PARALLEL_LEVEL=2 \
   -t ghcr.io/magalab/mysql-innodb-server:8.4.11 .
 ```
+
+### GitHub Actions 发布
+
+推送 `8.4.11` 或 `v8.4.11` 这样的 Git tag 时，`.github/workflows/publish-ghcr.yml` 会构建 `linux/amd64` 和 `linux/arm64`，并发布到：
+
+```text
+ghcr.io/magalab/mysql-innodb-server:<Git tag>
+```
+
+发布流程会从 `SOURCE.sha256` 读取源码版本、下载地址和 SHA-256，并要求 Git tag 与源码版本一致。升级 MySQL 版本时，必须先更新 `SOURCE.sha256`、重新适配并验证 patches，再创建对应的 Git tag。
 
 ### 启动服务
 
