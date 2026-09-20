@@ -28,19 +28,32 @@ jobs:
         run: |
           set -euo pipefail
 
-          read -r source_sha256 source_archive < SOURCE.sha256
-          source_version="${source_archive#mysql-}"
-          source_version="${source_version%.tar.gz}"
           tag_version="${GITHUB_REF_NAME#v}"
 
+          if [[ ! "$tag_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Git tag '$GITHUB_REF_NAME' must be a MySQL version, optionally prefixed with 'v'"
+            exit 1
+          fi
+
+          target_dir="targets/mysql-${tag_version%.*}"
+          source_file="${target_dir}/SOURCE.sha256"
+          if [[ ! -f "$source_file" ]]; then
+            echo "::error::No build target found for MySQL version '$tag_version' at '$target_dir'"
+            exit 1
+          fi
+
+          read -r source_sha256 source_archive < "$source_file"
+          source_version="${source_archive#mysql-}"
+          source_version="${source_version%.tar.gz}"
+
           if [[ ! "$source_sha256" =~ ^[[:xdigit:]]{64}$ ]]; then
-            echo "::error::SOURCE.sha256 does not contain a valid SHA-256 checksum"
+            echo "::error::$source_file does not contain a valid SHA-256 checksum"
             exit 1
           fi
 
           if [[ "$tag_version" != "$source_version" ]]; then
             echo "::error::Git tag '$GITHUB_REF_NAME' does not match MySQL source version '$source_version'"
-            echo "::error::Update SOURCE.sha256 and the patches before creating a new release tag."
+            echo "::error::Update the source pin and patches for '$target_dir' before creating a new release tag."
             exit 1
           fi
 
@@ -50,6 +63,8 @@ jobs:
           echo "version=${source_version}" >> "$GITHUB_OUTPUT"
           echo "sha256=${source_sha256}" >> "$GITHUB_OUTPUT"
           echo "url=${source_url}" >> "$GITHUB_OUTPUT"
+          echo "target_name=mysql-${tag_version%.*}" >> "$GITHUB_OUTPUT"
+          echo "target_dir=${target_dir}" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -77,8 +92,8 @@ jobs:
       - name: Build and push multi-platform image
         uses: docker/build-push-action@v7
         with:
-          context: .
-          file: ./Dockerfile
+          context: ${{ steps.source.outputs.target_dir }}
+          file: ${{ steps.source.outputs.target_dir }}/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
@@ -88,5 +103,5 @@ jobs:
             CMAKE_BUILD_PARALLEL_LEVEL=2
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=mysql-innodb-server
-          cache-to: type=gha,mode=max,scope=mysql-innodb-server
+          cache-from: type=gha,scope=mysql-innodb-server-${{ steps.source.outputs.target_name }}
+          cache-to: type=gha,mode=max,scope=mysql-innodb-server-${{ steps.source.outputs.target_name }}
