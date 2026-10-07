@@ -15,8 +15,16 @@ concurrency:
 
 jobs:
   docker:
-    name: Build and publish multi-platform image
+    name: Build and publish (${{ matrix.platform }})
     runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
 
     steps:
       - name: Check out repository
@@ -89,19 +97,19 @@ jobs:
           tags: |
             type=raw,value=${{ github.ref_name }}
 
-      - name: Build and push multi-platform image
+      - name: Build and push image
         uses: docker/build-push-action@v7
         with:
           context: ${{ steps.source.outputs.target_dir }}
           file: ${{ steps.source.outputs.target_dir }}/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           push: true
           build-args: |
             MYSQL_VERSION=${{ steps.source.outputs.version }}
             MYSQL_SOURCE_URL=${{ steps.source.outputs.url }}
             MYSQL_SOURCE_SHA256=${{ steps.source.outputs.sha256 }}
-            CMAKE_BUILD_PARALLEL_LEVEL=2
+            CMAKE_BUILD_PARALLEL_LEVEL=4
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=mysql-innodb-server-${{ steps.source.outputs.target_name }}
-          cache-to: type=gha,mode=max,scope=mysql-innodb-server-${{ steps.source.outputs.target_name }}
+          cache-from: type=gha,scope=mysql-innodb-server-${{ steps.source.outputs.target_name }}-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=mysql-innodb-server-${{ steps.source.outputs.target_name }}-${{ matrix.platform }}
