@@ -3,7 +3,7 @@
 | 中文 | [English](README.en.md) |
 | --- | --- |
 
-这是一个面向 MySQL 8.4.11 的小型补丁仓库。它不保存 MySQL 完整源码，而是保存补丁、源码裁剪脚本、Dockerfile 和验证说明，用于构建一个“用户表仅使用 InnoDB 持久化存储”的 MySQL Server。
+这是一个面向 MySQL 8.4.13 的小型补丁仓库。它不保存 MySQL 完整源码，而是保存补丁、源码裁剪脚本、Dockerfile 和验证说明，用于构建一个“用户表仅使用 InnoDB 持久化存储”的 MySQL Server。
 
 ## 当前状态
 
@@ -28,13 +28,13 @@ cd /path/to/mysql-innodb-server
 docker build --progress=plain \
   --file targets/mysql-8.4/Dockerfile \
   --build-arg CMAKE_BUILD_PARALLEL_LEVEL=2 \
-  -t ghcr.io/magalab/mysql-innodb-server:8.4.11 \
+  -t ghcr.io/magalab/mysql-innodb-server:8.4.13 \
   targets/mysql-8.4
 ```
 
 ### GitHub Actions 发布
 
-推送 `8.4.11` 或 `v8.4.11` 这样的 Git tag 时，`.github/workflows/publish-ghcr.yml` 会构建 `linux/amd64` 和 `linux/arm64`，并发布到：
+推送 `8.4.13` 或 `v8.4.13` 这样的 Git tag 时，`.github/workflows/publish-ghcr.yml` 会构建 `linux/amd64` 和 `linux/arm64`，并发布到：
 
 ```text
 ghcr.io/magalab/mysql-innodb-server:<Git tag>
@@ -49,7 +49,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_ROOT_PASSWORD='change-me' \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 默认会创建 `root@'%'`，因此 GUI 和其他容器可以通过 TCP 连接。初始化完成后可使用：
@@ -68,7 +68,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_ALLOW_EMPTY_PASSWORD=yes \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 `MYSQL_ALLOW_EMPTY_PASSWORD=yes` 与默认远程 root 账户组合时，使用者需要自行承担网络暴露风险。
@@ -110,12 +110,12 @@ docker run -d --name mysql-innodb-server \
   -e MYSQL_ROOT_PASSWORD='change-me' \
   -v mysql-innodb-server-data:/var/lib/mysql \
   -v "$(pwd)/initdb:/docker-entrypoint-initdb.d:ro" \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 ## 补丁序列
 
-补丁按文件名字典序应用，并且每个补丁都基于干净的 MySQL 8.4.11 源码：
+补丁按文件名字典序应用，并且每个补丁都基于干净的 MySQL 8.4.13 源码：
 
 1. `0001-remove-ndbinfo-server-integration.patch`：移除 NDB information schema 的 Server 集成；
 2. `0002-remove-myisam-core-and-key-cache.patch`：移除 MyISAM 核心状态和 key cache 路径；
@@ -132,8 +132,8 @@ docker run -d --name mysql-innodb-server \
 
 ```bash
 PATCH_REPO=/path/to/mysql-innodb-server/targets/mysql-8.4
-SOURCE_DIR=/path/to/mysql-8.4.11-work
-BUILD_DIR=/private/tmp/mysql-8.4.11-innodb-build
+SOURCE_DIR=/path/to/mysql-8.4.13-work
+BUILD_DIR=/private/tmp/mysql-8.4.13-innodb-build
 
 "$PATCH_REPO/scripts/apply-patches.sh" "$SOURCE_DIR"
 CONFIRM_PRUNE=yes "$PATCH_REPO/scripts/prune-source.sh" optional "$SOURCE_DIR"
@@ -175,4 +175,4 @@ CREATE TABLE t_innodb (id INT) ENGINE=InnoDB;
 
 ## 源码版本
 
-当前源码版本为 MySQL 8.4.11。源码归档 SHA-256 保存在 [SOURCE.sha256](SOURCE.sha256) 中；版本变更时应同步更新源码 URL、校验值、补丁和目标文档。
+当前源码版本为 MySQL 8.4.13。源码归档 SHA-256 保存在 [SOURCE.sha256](SOURCE.sha256) 中；版本变更时应同步更新源码 URL、校验值、补丁和目标文档。

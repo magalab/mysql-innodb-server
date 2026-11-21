@@ -3,7 +3,7 @@
 | [简体中文](README.md) | English |
 | --- | --- |
 
-This repository contains a small patch series for MySQL 8.4.11. It does not vendor the full MySQL source tree. Instead, it stores the patches, source-pruning scripts, Dockerfile, and validation notes needed to build a MySQL Server whose only user-table persistent storage engine is InnoDB.
+This repository contains a small patch series for MySQL 8.4.13. It does not vendor the full MySQL source tree. Instead, it stores the patches, source-pruning scripts, Dockerfile, and validation notes needed to build a MySQL Server whose only user-table persistent storage engine is InnoDB.
 
 ## Current status
 
@@ -28,13 +28,13 @@ cd /path/to/mysql-innodb-server
 docker build --progress=plain \
   --file targets/mysql-8.4/Dockerfile \
   --build-arg CMAKE_BUILD_PARALLEL_LEVEL=2 \
-  -t ghcr.io/magalab/mysql-innodb-server:8.4.11 \
+  -t ghcr.io/magalab/mysql-innodb-server:8.4.13 \
   targets/mysql-8.4
 ```
 
 ### GitHub Actions publishing
 
-Pushing a Git tag such as `8.4.11` or `v8.4.11` runs `.github/workflows/publish-ghcr.yml`, which builds `linux/amd64` and `linux/arm64` and publishes:
+Pushing a Git tag such as `8.4.13` or `v8.4.13` runs `.github/workflows/publish-ghcr.yml`, which builds `linux/amd64` and `linux/arm64` and publishes:
 
 ```text
 ghcr.io/magalab/mysql-innodb-server:<Git tag>
@@ -49,7 +49,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_ROOT_PASSWORD='change-me' \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 The default root account is `root@'%'`, so GUI clients and other containers can connect over TCP:
@@ -68,7 +68,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_ALLOW_EMPTY_PASSWORD=yes \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 When this is combined with the default remote root account, the user is responsible for the resulting network exposure.
@@ -110,12 +110,12 @@ docker run -d --name mysql-innodb-server \
   -e MYSQL_ROOT_PASSWORD='change-me' \
   -v mysql-innodb-server-data:/var/lib/mysql \
   -v "$(pwd)/initdb:/docker-entrypoint-initdb.d:ro" \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 ## Patch series
 
-Patches are applied in lexical filename order, and every patch is based on a clean MySQL 8.4.11 source tree:
+Patches are applied in lexical filename order, and every patch is based on a clean MySQL 8.4.13 source tree:
 
 1. `0001-remove-ndbinfo-server-integration.patch`: remove NDB information-schema integration from the Server;
 2. `0002-remove-myisam-core-and-key-cache.patch`: remove MyISAM core state and key-cache paths;
@@ -132,8 +132,8 @@ Keep a pristine source copy and apply the patches to a separate work copy:
 
 ```bash
 PATCH_REPO=/path/to/mysql-innodb-server/targets/mysql-8.4
-SOURCE_DIR=/path/to/mysql-8.4.11-work
-BUILD_DIR=/private/tmp/mysql-8.4.11-innodb-build
+SOURCE_DIR=/path/to/mysql-8.4.13-work
+BUILD_DIR=/private/tmp/mysql-8.4.13-innodb-build
 
 "$PATCH_REPO/scripts/apply-patches.sh" "$SOURCE_DIR"
 CONFIRM_PRUNE=yes "$PATCH_REPO/scripts/prune-source.sh" optional "$SOURCE_DIR"
@@ -175,4 +175,4 @@ InnoDB table creation should succeed. User-table creation with MyISAM, CSV, or M
 
 ## Source version
 
-The current source version is MySQL 8.4.11. Its archive SHA-256 is stored in [SOURCE.sha256](SOURCE.sha256). When changing versions, update the source URL, checksum, patches, and target documentation together.
+The current source version is MySQL 8.4.13. Its archive SHA-256 is stored in [SOURCE.sha256](SOURCE.sha256). When changing versions, update the source URL, checksum, patches, and target documentation together.

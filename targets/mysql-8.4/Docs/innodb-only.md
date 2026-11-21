@@ -20,7 +20,7 @@
 
 ## Patch and source layout
 
-补丁按文件名的字典序应用。每个补丁都基于干净的 MySQL 8.4.11 源码：
+补丁按文件名的字典序应用。每个补丁都基于干净的 MySQL 8.4.13 源码：
 
 1. `0001-remove-ndbinfo-server-integration.patch`
 2. `0002-remove-myisam-core-and-key-cache.patch`
@@ -33,7 +33,7 @@
 
 ## Docker packaging
 
-`../Dockerfile` 使用 Ubuntu 24.04 多阶段构建：builder 下载并校验 MySQL 8.4.11 源码，回放本仓库补丁并执行源码裁剪；runtime 只复制 `mysqld`、初始化需要的客户端、运行时库、字符集/错误消息资源和 Docker 入口文件。
+`../Dockerfile` 使用 Ubuntu 24.04 多阶段构建：builder 下载并校验 MySQL 8.4.13 源码，回放本仓库补丁并执行源码裁剪；runtime 只复制 `mysqld`、初始化需要的客户端、运行时库、字符集/错误消息资源和 Docker 入口文件。
 
 镜像复用了官方镜像的初始化变量和 `/docker-entrypoint-initdb.d` 约定，同时保持 Ubuntu 风格的 `/etc/mysql/my.cnf` 与 `conf.d` 配置目录。默认创建 `root@'%'`，便于 GUI 和其他容器通过 TCP 连接；使用空密码时应避免将端口暴露到不可信网络。
 
@@ -50,4 +50,4 @@
 
 ## Source version
 
-当前源码版本为 MySQL 8.4.11。源码归档 SHA-256 保存在 [SOURCE.sha256](../SOURCE.sha256) 中；版本变更时应同步更新源码 URL、校验值、补丁和文档。
+当前源码版本为 MySQL 8.4.13。源码归档 SHA-256 保存在 [SOURCE.sha256](../SOURCE.sha256) 中；版本变更时应同步更新源码 URL、校验值、补丁和文档。

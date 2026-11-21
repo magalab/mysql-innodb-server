@@ -9,7 +9,7 @@
 
 | 上游系列 | 固定源码版本 | 状态 | 目标目录 |
 | --- | --- | --- | --- |
-| MySQL 8.4 LTS | 8.4.11 | 已实现 | [targets/mysql-8.4](targets/mysql-8.4/README.md) |
+| MySQL 8.4 LTS | 8.4.13 | 已实现 | [targets/mysql-8.4](targets/mysql-8.4/README.md) |
 
 各目标都以 InnoDB 作为用户表唯一的持久化存储引擎，同时保留 MySQL 正常运行所需的内部能力。补丁不能跨版本系列直接复用。
 
@@ -19,7 +19,7 @@
 docker build --progress=plain \
   --file targets/mysql-8.4/Dockerfile \
   --build-arg CMAKE_BUILD_PARALLEL_LEVEL=2 \
-  -t ghcr.io/magalab/mysql-innodb-server:8.4.11 \
+  -t ghcr.io/magalab/mysql-innodb-server:8.4.13 \
   targets/mysql-8.4
 ```
 
@@ -36,7 +36,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_ROOT_PASSWORD='change-me' \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 默认会创建 `root@'%'`，因此 GUI 客户端和其他容器可直接通过 TCP 连接。客户端配置：`127.0.0.1:3306`，用户 `root`，密码即所设值。
@@ -48,7 +48,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_ALLOW_EMPTY_PASSWORD=yes \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 > ⚠️ 与默认的远程 root 账户组合时，使用者需要自行承担网络暴露风险。生产环境请改用指定密码或限制网络访问。
@@ -60,7 +60,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_RANDOM_ROOT_PASSWORD=yes \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 密码由容器随机生成并写入容器日志（`docker logs mysql-innodb-server`）。
@@ -75,7 +75,7 @@ docker run -d --name mysql-innodb-server \
   -e MYSQL_USER=appuser \
   -e MYSQL_PASSWORD='app-pass' \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 `MYSQL_ROOT_PASSWORD` / `MYSQL_ALLOW_EMPTY_PASSWORD=yes` / `MYSQL_RANDOM_ROOT_PASSWORD=yes` 三者必须且只能选一个，未设置任何一个会导致首次启动失败。

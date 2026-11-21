@@ -4,10 +4,10 @@ ARG UBUNTU_VERSION=24.04
 
 FROM ubuntu:${UBUNTU_VERSION} AS builder
 
-ARG MYSQL_VERSION=8.4.11
-ARG MYSQL_SOURCE_URL=https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-8.4.11.tar.gz
-# SHA-256 of the MySQL 8.4.11 generic source archive.
-ARG MYSQL_SOURCE_SHA256=eb3051164d625dd346a8203f76e0d5d5d9aec51dbe9d51788e39ec6b3f1394c2
+ARG MYSQL_VERSION=8.4.13
+ARG MYSQL_SOURCE_URL=https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-8.4.13.tar.gz
+# SHA-256 of the MySQL 8.4.13 generic source archive.
+ARG MYSQL_SOURCE_SHA256=f6ddc7f7fb6462bab8b533b13c06af3fff57fa9ca12259b81ab13cd9930b9d58
 ARG CMAKE_BUILD_PARALLEL_LEVEL=2
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -101,7 +101,7 @@ RUN LD_LIBRARY_PATH=/opt/mysql-runtime/lib \
 
 FROM ubuntu:${UBUNTU_VERSION} AS runtime
 
-ARG MYSQL_VERSION=8.4.11
+ARG MYSQL_VERSION=8.4.13
 
 ENV DEBIAN_FRONTEND=noninteractive \
   MYSQL_HOME=/usr/local/mysql \

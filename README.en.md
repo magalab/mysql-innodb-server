@@ -9,7 +9,7 @@ This repository maintains isolated build targets for MySQL upstream series. Each
 
 | Upstream series | Pinned source | Status | Target |
 | --- | --- | --- | --- |
-| MySQL 8.4 LTS | 8.4.11 | Implemented | [targets/mysql-8.4](targets/mysql-8.4/README.en.md) |
+| MySQL 8.4 LTS | 8.4.13 | Implemented | [targets/mysql-8.4](targets/mysql-8.4/README.en.md) |
 
 Each target makes InnoDB the only persistent storage engine for user tables while retaining internal capabilities required for normal MySQL operation. Patches are specific to their upstream series and should not be reused across series without rework.
 
@@ -19,7 +19,7 @@ Each target makes InnoDB the only persistent storage engine for user tables whil
 docker build --progress=plain \
   --file targets/mysql-8.4/Dockerfile \
   --build-arg CMAKE_BUILD_PARALLEL_LEVEL=2 \
-  -t ghcr.io/magalab/mysql-innodb-server:8.4.11 \
+  -t ghcr.io/magalab/mysql-innodb-server:8.4.13 \
   targets/mysql-8.4
 ```
 
@@ -36,7 +36,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_ROOT_PASSWORD='change-me' \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 The default root account is `root@'%'`, so GUI clients and other containers can connect over TCP. Client configuration: `127.0.0.1:3306`, user `root`, password as set above.
@@ -48,7 +48,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_ALLOW_EMPTY_PASSWORD=yes \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 > ⚠️ Combined with the default remote root account, the operator is responsible for the resulting network exposure. Use a fixed password or restrict network access in any non-dev setting.
@@ -60,7 +60,7 @@ docker run -d --name mysql-innodb-server \
   -p 3306:3306 \
   -e MYSQL_RANDOM_ROOT_PASSWORD=yes \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 A random password is generated and printed to the container log (`docker logs mysql-innodb-server`).
@@ -75,7 +75,7 @@ docker run -d --name mysql-innodb-server \
   -e MYSQL_USER=appuser \
   -e MYSQL_PASSWORD='app-pass' \
   -v mysql-innodb-server-data:/var/lib/mysql \
-  ghcr.io/magalab/mysql-innodb-server:8.4.11
+  ghcr.io/magalab/mysql-innodb-server:8.4.13
 ```
 
 Pick exactly one of `MYSQL_ROOT_PASSWORD`, `MYSQL_ALLOW_EMPTY_PASSWORD=yes`, or `MYSQL_RANDOM_ROOT_PASSWORD=yes`. Setting none of them causes the first startup to fail.
